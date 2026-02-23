@@ -14,12 +14,11 @@
         <!-- Header da Sala -->
         <div class="sala-header">
             <div class="sala-info">
-                <h2 id="salaNome">Carregando...</h2>
-                <span id="salaCodigo" class="codigo-badge"></span>
+                <h2 id="salaNome">Sala: Carregando... <span id="salaCodigo" class="codigo-badge"></span></h2>
             </div>
             <div class="sala-actions">
-                <button onclick="copiarCodigo()" class="btn-copiar">📋 Copiar Código</button>
-                <button onclick="sairSala()" class="btn-sair">🚪 Sair</button>
+                <span id="syncStatus" class="sync-badge">Sincronizando...</span>
+                <button onclick="sairSala()" class="btn-sair">Sair</button>
             </div>
         </div>
 
@@ -27,16 +26,28 @@
             <!-- Player -->
             <div class="player-section">
                 <video id="salaPlayer" class="video-js vjs-default-skin" preload="auto"></video>
-                <div class="player-controls" id="playerControls">
-                    <button id="playBtn" onclick="togglePlay()">▶</button>
-                    <div class="progress-container" onclick="seek(event)">
+                <div class="custom-controls" id="customControls">
+                    <button id="playBtn" class="control-btn" onclick="togglePlay()">▶</button>
+                    <button class="control-btn" onclick="skipBackward()">⏪</button>
+                    <button class="control-btn" onclick="skipForward()">⏩</button>
+                    <div class="progress-container" onclick="seek(event)" onmousemove="showPreview(event)" onmouseleave="hidePreview()">
                         <div class="progress-bar" id="progressBar"></div>
+                        <div class="sprite-preview" id="spritePreview">
+                            <div class="sprite-time" id="spriteTime"></div>
+                        </div>
                     </div>
-                    <span id="timeDisplay">0:00 / 0:00</span>
-                    <button onclick="toggleFullscreen()">⛶</button>
-                </div>
-                <div class="sync-status" id="syncStatus">
-                    <span id="syncMessage">Sincronizando...</span>
+                    <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+                    <button id="volumeBtn" class="control-btn" onclick="toggleMute()">🔊</button>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="100" onchange="changeVolume()">
+                    <select id="speedSelect" class="speed-select" onchange="changeSpeed()">
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                    <button class="control-btn" onclick="toggleFullscreen()">⛶</button>
                 </div>
             </div>
 

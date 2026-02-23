@@ -1,6 +1,43 @@
 <?php
-if (isset($_GET['path']) && file_exists($_GET['path'])) {
+session_start();
+require_once 'config/database.php';
+
+$path = null;
+
+// Se tiver parâmetro 'id', buscar no banco
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $episodio_id = $_GET['ep'] ?? null;
+    
+    try {
+        if ($episodio_id) {
+            // Buscar episódio específico
+            $stmt = $pdo->prepare("SELECT path FROM episodios WHERE id = ?");
+            $stmt->execute([$episodio_id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $path = $result['path'];
+            }
+        } else {
+            // Buscar título (filme)
+            $stmt = $pdo->prepare("SELECT path, pasta_titulo FROM titulos WHERE id = ?");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $path = $result['path'] ?: $result['pasta_titulo'];
+            }
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo 'Erro no banco de dados';
+        exit;
+    }
+} elseif (isset($_GET['path'])) {
+    // Usar path diretamente (compatibilidade)
     $path = $_GET['path'];
+}
+
+if ($path && file_exists($path)) {
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     
     $mimeTypes = [
@@ -53,6 +90,6 @@ if (isset($_GET['path']) && file_exists($_GET['path'])) {
     }
 } else {
     http_response_code(404);
-    echo 'Arquivo não encontrado';
+    echo 'Arquivo não encontrado - ID: ' . ($_GET['id'] ?? 'N/A') . ' - Path: ' . ($path ?? 'N/A');
 }
 ?>

@@ -12,6 +12,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 $sala_id = $data['sala_id'] ?? 0;
 $tempo_atual = $data['tempo_atual'] ?? 0;
 $pausado = $data['pausado'] ?? true;
+$timestamp = $data['timestamp'] ?? time() * 1000;
 
 if (!$sala_id) {
     echo json_encode(['success' => false, 'error' => 'ID da sala é obrigatório']);
@@ -30,8 +31,8 @@ try {
     }
     
     // Atualizar estado da sala
-    $stmt = $pdo->prepare("UPDATE salas SET tempo_atual = ?, pausado = ? WHERE id = ?");
-    $stmt->execute([$tempo_atual, $pausado ? 1 : 0, $sala_id]);
+    $stmt = $pdo->prepare("UPDATE salas SET tempo_atual = ?, pausado = ?, timestamp_acao = ? WHERE id = ?");
+    $stmt->execute([$tempo_atual, $pausado ? 1 : 0, $timestamp, $sala_id]);
     
     echo json_encode(['success' => true]);
 } catch (Exception $e) {

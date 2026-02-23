@@ -1,6 +1,8 @@
-html, body{
+html, body {
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .salas-actions {
@@ -8,6 +10,7 @@ html, body{
     gap: 15px;
     margin: 20px 0;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .btn-criar, .btn-entrar {
@@ -17,21 +20,30 @@ html, body{
     font-size: 16px;
     cursor: pointer;
     transition: all 0.3s;
+    font-weight: bold;
 }
 
 .btn-criar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #e50914;
     color: white;
 }
 
 .btn-entrar {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: #333;
     color: white;
 }
 
 .btn-criar:hover, .btn-entrar:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.btn-criar:hover {
+    background: #b8070f;
+}
+
+.btn-entrar:hover {
+    background: #555;
 }
 
 .salas-grid {
@@ -42,21 +54,21 @@ html, body{
 }
 
 .sala-card {
-    background: rgba(255,255,255,0.1);
-    border-radius: 12px;
+    background: #181818;
+    border-radius: 8px;
     padding: 20px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    transition: transform 0.3s;
+    border: 1px solid #333;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .sala-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
 }
 
 .sala-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
 }
@@ -68,11 +80,12 @@ html, body{
 }
 
 .sala-codigo {
-    background: rgba(255,255,255,0.2);
+    background: #e50914;
+    color: white;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
-    color: #ccc;
+    font-weight: bold;
 }
 
 .sala-info {
@@ -82,6 +95,7 @@ html, body{
 .sala-titulo {
     color: #f0f0f0;
     margin-bottom: 5px;
+    font-weight: 500;
 }
 
 .sala-participantes {
@@ -96,65 +110,201 @@ html, body{
 
 .btn-entrar-sala {
     flex: 1;
-    padding: 8px 16px;
-    background: #4CAF50;
+    padding: 10px 16px;
+    background: #e50914;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
 }
 
 .btn-entrar-sala:hover {
-    background: #45a049;
+    background: #b8070f;
 }
 
-.modal {
+.sala-modal {
     display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0,0,0,0.8);
     z-index: 1000;
 }
 
-.modal.show {
+.sala-modal.show {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .modal-content {
-    background: #2a2a2a;
-    padding: 30px;
-    border-radius: 12px;
+    background: #181818;
+    border-radius: 8px;
     width: 90%;
     max-width: 500px;
+    border: 1px solid #333;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
+    overflow: hidden;
 }
 
-.modal-content h3 {
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 1px solid #333;
+    background: #1a1a1a;
+}
+
+.modal-header h3 {
     color: white;
+    margin: 0;
+    font-size: 20px;
+}
+
+.modal-close {
+    color: #ccc;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #e50914;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.form-group {
     margin-bottom: 20px;
-    text-align: center;
+}
+
+.form-group label {
+    display: block;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+    margin-top: 10px;
+    padding: 12px;
+    background: #2a2a2a;
+    border-radius: 6px;
+    border: 2px solid #e50914;
+}
+
+.titulo-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titulo-nome {
+    color: white;
+    font-weight: bold;
+}
+
+.btn-remover {
+    background: #e50914;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remover:hover {
+    background: #b8070f;
+}
+
+.temporadas-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background: #1a1a1a;
+}
+
+.temporada-item {
+    border-bottom: 1px solid #333;
+}
+
+.temporada-header {
+    padding: 12px;
+    background: #2a2a2a;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+}
+
+.temporada-header:hover {
+    background: #333;
+}
+
+.episodios-list {
+    display: none;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.episodios-list.show {
+    display: block;
+}
+
+.episodio-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #ccc;
+    border-bottom: 1px solid #333;
+    transition: background 0.2s;
+}
+
+.episodio-item:hover {
+    background: #333;
+    color: white;
+}
+
+.episodio-item.selected {
+    background: #e50914;
+    color: white;
 }
 
 .modal-content input {
-    width: calc(100% - 24px);
+    width: 100%;
     padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #555;
+    border: 2px solid #333;
     border-radius: 6px;
-    background: #333;
+    background: #1a1a1a;
     color: white;
     font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.modal-content input:focus {
+    outline: none;
+    border-color: #e50914;
 }
 
 .titulo-selector {
     position: relative;
-    margin-bottom: 15px;
 }
 
 .resultados-busca {
@@ -162,8 +312,8 @@ html, body{
     top: 100%;
     left: 0;
     right: 0;
-    background: #333;
-    border: 1px solid #555;
+    background: #1a1a1a;
+    border: 2px solid #333;
     border-top: none;
     border-radius: 0 0 6px 6px;
     max-height: 200px;
@@ -172,56 +322,95 @@ html, body{
 }
 
 .resultado-item {
-    padding: 10px;
+    padding: 12px;
     cursor: pointer;
-    border-bottom: 1px solid #555;
+    border-bottom: 1px solid #333;
     color: white;
+    transition: background 0.2s;
 }
 
 .resultado-item:hover {
-    background: #444;
+    background: #333;
+}
+
+.resultado-item:last-child {
+    border-bottom: none;
 }
 
 .modal-actions {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     justify-content: center;
+    margin-top: 30px;
 }
 
 .btn-confirmar, .btn-cancelar {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: bold;
+    transition: background 0.2s;
 }
 
 .btn-confirmar {
-    background: #4CAF50;
+    background: #e50914;
     color: white;
+}
+
+.btn-confirmar:hover {
+    background: #b8070f;
 }
 
 .btn-cancelar {
-    background: #f44336;
+    background: #333;
     color: white;
+}
+
+.btn-cancelar:hover {
+    background: #555;
 }
 
 .btn-voltar {
-    background: rgba(255,255,255,0.1);
+    background: #333;
     color: white;
-    border: 1px solid rgba(255,255,255,0.3);
-    padding: 8px 16px;
+    border: 1px solid #555;
+    padding: 10px 16px;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
 }
 
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.btn-voltar:hover {
+    background: #555;
+    transform: translateY(-1px);
 }
 
 .minhas-salas h2 {
     color: white;
     margin-bottom: 20px;
+    font-size: 22px;
+}
+
+@media (max-width: 768px) {
+    .salas-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-criar, .btn-entrar {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .salas-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
 }

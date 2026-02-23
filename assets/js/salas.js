@@ -1,4 +1,5 @@
 let tituloSelecionado = null;
+let episodioSelecionado = null;
 
 // Carregar salas ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
@@ -7,24 +8,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function mostrarModalCriar() {
     const modal = document.getElementById('modalCriar');
-    modal.style.display = 'flex';
+    modal.classList.add('show');
     document.getElementById('nomeSala').focus();
 }
 
 function mostrarModalEntrar() {
     const modal = document.getElementById('modalEntrar');
-    modal.style.display = 'flex';
+    modal.classList.add('show');
     document.getElementById('codigoSala').focus();
 }
 
 function fecharModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('show');
     // Limpar campos
     if (modalId === 'modalCriar') {
         document.getElementById('nomeSala').value = '';
         document.getElementById('buscaTitulo').value = '';
         document.getElementById('resultadosTitulos').innerHTML = '';
+        document.getElementById('tituloSelecionado').style.display = 'none';
+        document.getElementById('episodioSelector').style.display = 'none';
         tituloSelecionado = null;
+        episodioSelecionado = null;
     } else {
         document.getElementById('codigoSala').value = '';
     }
@@ -40,13 +45,13 @@ async function buscarTitulos() {
     }
     
     try {
-        const response = await fetch(`api/buscar.php?q=${encodeURIComponent(busca)}&limit=5`);
+        const response = await fetch(`api/buscar.php?termo=${encodeURIComponent(busca)}`);
         const data = await response.json();
         
-        if (data.success && data.results.length > 0) {
-            resultados.innerHTML = data.results.map(titulo => `
-                <div class="resultado-item" onclick="selecionarTitulo(${titulo.id}, '${titulo.titulo.replace(/'/g, "\\'")}')">
-                    ${titulo.titulo} (${titulo.ano || 'N/A'})
+        if (data.success && data.data.length > 0) {
+            resultados.innerHTML = data.data.slice(0, 5).map(titulo => `
+                <div class="resultado-item" onclick="selecionarTitulo('${titulo.id}', '${titulo.nome.replace(/'/g, "\\'")}')">  
+                    <strong>${titulo.nome}</strong> <span class="badge badge-${titulo.tipo}">${titulo.tipo}</span>
                 </div>
             `).join('');
         } else {
@@ -57,10 +62,92 @@ async function buscarTitulos() {
     }
 }
 
-function selecionarTitulo(id, titulo) {
-    tituloSelecionado = { id, titulo };
-    document.getElementById('buscaTitulo').value = titulo;
-    document.getElementById('resultadosTitulos').innerHTML = '';
+async function selecionarTitulo(id, nome) {
+    try {
+        const response = await fetch(`api/get_titulo.php?id=${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            tituloSelecionado = data.data;
+            document.getElementById('buscaTitulo').style.display = 'none';
+            document.getElementById('resultadosTitulos').innerHTML = '';
+            
+            const tituloSelecionadoDiv = document.getElementById('tituloSelecionado');
+            tituloSelecionadoDiv.querySelector('.titulo-nome').textContent = nome;
+            tituloSelecionadoDiv.style.display = 'block';
+            
+            // Se for série, mostrar seletor de episódios
+            if (['serie', 'anime', 'bl', 'donghua'].includes(tituloSelecionado.tipo)) {
+                mostrarSeletorEpisodios(tituloSelecionado.temporadas);
+            } else {
+                document.getElementById('episodioSelector').style.display = 'none';
+                episodioSelecionado = null;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar título:', error);
+    }
+}
+
+function removerTitulo() {
+    tituloSelecionado = null;
+    episodioSelecionado = null;
+    document.getElementById('buscaTitulo').style.display = 'block';
+    document.getElementById('buscaTitulo').value = '';
+    document.getElementById('tituloSelecionado').style.display = 'none';
+    document.getElementById('episodioSelector').style.display = 'none';
+}
+
+function mostrarSeletorEpisodios(temporadas) {
+    const container = document.getElementById('temporadasContainer');
+    const episodioSelector = document.getElementById('episodioSelector');
+    
+    container.innerHTML = temporadas.map((temp, tempIndex) => `
+        <div class="temporada-item">
+            <div class="temporada-header" onclick="toggleTemporada(${tempIndex})">
+                <span>Temporada ${temp.nome_temporada}</span>
+                <span class="temporada-arrow">▶</span>
+            </div>
+            <div class="episodios-list" id="episodios-${tempIndex}">
+                ${temp.episodios.map(ep => `
+                    <div class="episodio-item" onclick="selecionarEpisodio('${ep.id}', '${temp.nome_temporada}', '${ep.tag}', '${ep.titulo_episodio || 'Episódio ' + ep.tag}')">
+                        Ep. ${ep.tag} ${ep.titulo_episodio ? '- ' + ep.titulo_episodio : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+    
+    episodioSelector.style.display = 'block';
+}
+
+function toggleTemporada(index) {
+    const episodiosList = document.getElementById(`episodios-${index}`);
+    const arrow = episodiosList.previousElementSibling.querySelector('.temporada-arrow');
+    
+    if (episodiosList.classList.contains('show')) {
+        episodiosList.classList.remove('show');
+        arrow.textContent = '▶';
+    } else {
+        episodiosList.classList.add('show');
+        arrow.textContent = '▼';
+    }
+}
+
+function selecionarEpisodio(episodioId, temporada, tag, titulo) {
+    // Remover seleção anterior
+    document.querySelectorAll('.episodio-item.selected').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // Selecionar novo episódio
+    event.target.classList.add('selected');
+    episodioSelecionado = {
+        id: episodioId,
+        temporada: temporada,
+        tag: tag,
+        titulo: titulo
+    };
 }
 
 async function criarSala() {
@@ -76,14 +163,26 @@ async function criarSala() {
         return;
     }
     
+    // Para séries, verificar se um episódio foi selecionado
+    if (['serie', 'anime', 'bl', 'donghua'].includes(tituloSelecionado.tipo) && !episodioSelecionado) {
+        alert('Selecione um episódio');
+        return;
+    }
+    
     try {
+        const payload = {
+            nome: nome,
+            titulo_id: tituloSelecionado.id
+        };
+        
+        if (episodioSelecionado) {
+            payload.episodio_id = episodioSelecionado.id;
+        }
+        
         const response = await fetch('api/criar_sala.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nome: nome,
-                titulo_id: tituloSelecionado.id
-            })
+            body: JSON.stringify(payload)
         });
         
         const data = await response.json();
@@ -165,10 +264,10 @@ async function carregarMinhasSalas() {
 
 // Fechar modal ao clicar fora
 window.onclick = function(event) {
-    const modals = document.querySelectorAll('.modal');
+    const modals = document.querySelectorAll('.sala-modal');
     modals.forEach(modal => {
         if (event.target === modal) {
-            modal.style.display = 'none';
+            modal.classList.remove('show');
         }
     });
 }
