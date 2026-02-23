@@ -1,0 +1,29 @@
+{
+  "name": "MomFlix",
+  "short_name": "MomFlix",
+  "description": "Plataforma de streaming de filmes e séries",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#141414",
+  "theme_color": "#e50914",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logoS.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logoS.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

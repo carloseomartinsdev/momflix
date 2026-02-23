@@ -1,0 +1,157 @@
+main {
+    padding: 15px 20px 40px 20px;
+}
+
+.categoria {
+    margin-bottom: 30px;
+}
+
+.categoria-titulo {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rolo {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+.rolo::-webkit-scrollbar {
+    height: 6px;
+}
+
+.rolo::-webkit-scrollbar-track {
+    background: var(--bg-card);
+}
+
+.rolo::-webkit-scrollbar-thumb {
+    background: var(--red-primary);
+    border-radius: 3px;
+}
+
+.card {
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    overflow: hidden;
+    width: 160px;
+    height: 280px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.progress-rolo {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    height: 4px;
+    background: var(--red-primary);
+    z-index: 2;
+    transition: width 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.card img {
+    width: 100%;
+    height: 230px;
+    object-fit: cover;
+    background: #000;
+}
+
+.card-titulo {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px;
+    height: 50px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sem-capa {
+    width: 100%;
+    height: 230px;
+    background: linear-gradient(135deg, var(--bg-card), var(--border-light));
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    text-align: center;
+}
+
+.sem-capa img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+.sem-capa .texto {
+    font-size: 11px;
+}
+
+.sem-itens {
+    color: var(--text-tertiary);
+    font-style: italic;
+    margin-top: 20px;
+}
+/* Cards de Top List */
+.rolo-top {
+    gap: 15px;
+    align-items: flex-end;
+    height: auto;
+    overflow: hidden;
+}
+
+.top-wrapper {/*
+    flex-shrink: 0;
+    width: 240px;*/
+    margin-right: 10px;
+}
+
+.top-container {
+    display: flex;
+    flex-direction: row;
+    gap: 0px;
+    width: auto;
+    height: 300px;
+    align-items: flex-end;
+}
+
+.top-numero {
+    font-size: 140px;
+    font-weight: 900;
+    text-align: right;
+    font-family: 'Impact', 'Arial Narrow', Arial, sans-serif;
+    letter-spacing: -8px;
+    background: linear-gradient(45deg, #ef4444, #dc2626, #9ca3af, #6b7280);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    line-height: 1;
+    z-index: 1;
+    vertical-align: bottom;
+}
+
+.top-container .card {
+    z-index: 2;
+}

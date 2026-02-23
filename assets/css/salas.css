@@ -1,0 +1,227 @@
+html, body{
+    width: 100%;
+    height: 100%;
+}
+
+.salas-actions {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    justify-content: center;
+}
+
+.btn-criar, .btn-entrar {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-criar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-entrar {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.btn-criar:hover, .btn-entrar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.salas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.sala-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: transform 0.3s;
+}
+
+.sala-card:hover {
+    transform: translateY(-5px);
+}
+
+.sala-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.sala-nome {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+
+.sala-codigo {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.sala-info {
+    margin-bottom: 15px;
+}
+
+.sala-titulo {
+    color: #f0f0f0;
+    margin-bottom: 5px;
+}
+
+.sala-participantes {
+    color: #ccc;
+    font-size: 14px;
+}
+
+.sala-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-entrar-sala {
+    flex: 1;
+    padding: 8px 16px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-entrar-sala:hover {
+    background: #45a049;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: #2a2a2a;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-sizing: border-box;
+}
+
+.modal-content h3 {
+    color: white;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-content input {
+    width: calc(100% - 24px);
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background: #333;
+    color: white;
+    font-size: 16px;
+}
+
+.titulo-selector {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.resultados-busca {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #333;
+    border: 1px solid #555;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.resultado-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #555;
+    color: white;
+}
+
+.resultado-item:hover {
+    background: #444;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-confirmar, .btn-cancelar {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-confirmar {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-cancelar {
+    background: #f44336;
+    color: white;
+}
+
+.btn-voltar {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.minhas-salas h2 {
+    color: white;
+    margin-bottom: 20px;
+}

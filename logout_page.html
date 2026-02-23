@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Saindo...</title>
+</head>
+<body>
+    <script>
+        fetch('logout.php')
+            .then(r => r.json())
+            .then(result => {
+                if (result.success) {
+                    window.location.href = 'login.html';
+                }
+            });
+    </script>
+</body>
+</html>
