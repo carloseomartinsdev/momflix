@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Conexão Externa</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 8px 16px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Teste Conexões WebSocket</h1>
+    
+    <div class="test">
+        <h3>1. Localhost (127.0.0.1)</h3>
+        <button onclick="testar('127.0.0.1')">Testar</button>
+        <div id="result-127"></div>
+    </div>
+    
+    <div class="test">
+        <h3>2. IP Local</h3>
+        <button onclick="testar(getLocalIP())">Testar IP Local</button>
+        <div id="result-local"></div>
+    </div>
+    
+    <div class="test">
+        <h3>3. Teste Manual</h3>
+        <input type="text" id="customIP" placeholder="Digite o IP" value="">
+        <button onclick="testar(document.getElementById('customIP').value)">Testar</button>
+        <div id="result-custom"></div>
+    </div>
+    
+    <script>
+        function getLocalIP() {
+            // Tentar obter IP local (aproximação)
+            return window.location.hostname || '192.168.1.100';
+        }
+        
+        function testar(ip) {
+            if (!ip) return;
+            
+            const resultId = ip === '127.0.0.1' ? 'result-127' : 
+                           ip === getLocalIP() ? 'result-local' : 'result-custom';
+            const resultDiv = document.getElementById(resultId);
+            
+            resultDiv.innerHTML = `Testando ${ip}:8080...`;
+            
+            const ws = new WebSocket(`ws://${ip}:8080`);
+            const timeout = setTimeout(() => {
+                ws.close();
+                resultDiv.innerHTML = `❌ Timeout - ${ip}:8080`;
+                resultDiv.className = 'error';
+            }, 5000);
+            
+            ws.onopen = () => {
+                clearTimeout(timeout);
+                resultDiv.innerHTML = `✅ Conectado - ${ip}:8080`;
+                resultDiv.className = 'success';
+                ws.send(JSON.stringify({type: 'ping'}));
+            };
+            
+            ws.onmessage = (e) => {
+                resultDiv.innerHTML += `<br>📥 ${e.data}`;
+            };
+            
+            ws.onclose = (e) => {
+                if (e.code !== 1000) {
+                    resultDiv.innerHTML = `❌ Falhou - ${ip}:8080 (${e.code})`;
+                    resultDiv.className = 'error';
+                }
+            };
+            
+            ws.onerror = () => {
+                clearTimeout(timeout);
+                resultDiv.innerHTML = `❌ Erro - ${ip}:8080`;
+                resultDiv.className = 'error';
+            };
+        }
+        
+        // Mostrar IP atual
+        document.getElementById('customIP').value = window.location.hostname;
+    </script>
+</body>
+</html>

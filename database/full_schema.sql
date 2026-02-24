@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Tempo de geração: 23/02/2026 às 15:33
+-- Tempo de geração: 24/02/2026 às 00:19
 -- Versão do servidor: 10.4.32-MariaDB
 -- Versão do PHP: 8.2.12
 
@@ -101,6 +101,55 @@ CREATE TABLE `filmes_saga` (
 CREATE TABLE `generos` (
   `id` int(11) NOT NULL,
   `genero` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `salas`
+--
+
+CREATE TABLE `salas` (
+  `id` int(11) NOT NULL,
+  `nome` varchar(100) NOT NULL,
+  `codigo` varchar(10) NOT NULL,
+  `lider_id` int(11) NOT NULL,
+  `titulo_id` varchar(8) NOT NULL,
+  `episodio_id` varchar(8) DEFAULT NULL,
+  `tempo_atual` decimal(10,2) DEFAULT 0.00,
+  `pausado` tinyint(1) DEFAULT 1,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ativo` tinyint(1) DEFAULT 1,
+  `timestamp_acao` bigint(20) DEFAULT 0,
+  `titulo_path` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `sala_mensagens`
+--
+
+CREATE TABLE `sala_mensagens` (
+  `id` int(11) NOT NULL,
+  `sala_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `mensagem` text NOT NULL,
+  `enviado_em` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `sala_participantes`
+--
+
+CREATE TABLE `sala_participantes` (
+  `id` int(11) NOT NULL,
+  `sala_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `entrou_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ativo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -238,6 +287,34 @@ ALTER TABLE `generos`
   ADD KEY `idx_genero` (`genero`);
 
 --
+-- Índices de tabela `salas`
+--
+ALTER TABLE `salas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `codigo` (`codigo`),
+  ADD KEY `lider_id` (`lider_id`),
+  ADD KEY `titulo_id` (`titulo_id`),
+  ADD KEY `episodio_id` (`episodio_id`),
+  ADD KEY `idx_salas_codigo` (`codigo`);
+
+--
+-- Índices de tabela `sala_mensagens`
+--
+ALTER TABLE `sala_mensagens`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `usuario_id` (`usuario_id`),
+  ADD KEY `idx_sala_mensagens_sala` (`sala_id`);
+
+--
+-- Índices de tabela `sala_participantes`
+--
+ALTER TABLE `sala_participantes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_participante` (`sala_id`,`usuario_id`),
+  ADD KEY `usuario_id` (`usuario_id`),
+  ADD KEY `idx_sala_participantes_sala` (`sala_id`);
+
+--
 -- Índices de tabela `temporadas`
 --
 ALTER TABLE `temporadas`
@@ -301,6 +378,24 @@ ALTER TABLE `generos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de tabela `salas`
+--
+ALTER TABLE `salas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de tabela `sala_mensagens`
+--
+ALTER TABLE `sala_mensagens`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de tabela `sala_participantes`
+--
+ALTER TABLE `sala_participantes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de tabela `temporadas`
 --
 ALTER TABLE `temporadas`
@@ -333,6 +428,28 @@ ALTER TABLE `episodios`
 --
 ALTER TABLE `filmes_saga`
   ADD CONSTRAINT `filmes_saga_ibfk_1` FOREIGN KEY (`saga_id`) REFERENCES `titulos` (`id`) ON DELETE CASCADE;
+
+--
+-- Restrições para tabelas `salas`
+--
+ALTER TABLE `salas`
+  ADD CONSTRAINT `salas_ibfk_1` FOREIGN KEY (`lider_id`) REFERENCES `usuarios` (`id`),
+  ADD CONSTRAINT `salas_ibfk_2` FOREIGN KEY (`titulo_id`) REFERENCES `titulos` (`id`),
+  ADD CONSTRAINT `salas_ibfk_3` FOREIGN KEY (`episodio_id`) REFERENCES `episodios` (`id`);
+
+--
+-- Restrições para tabelas `sala_mensagens`
+--
+ALTER TABLE `sala_mensagens`
+  ADD CONSTRAINT `sala_mensagens_ibfk_1` FOREIGN KEY (`sala_id`) REFERENCES `salas` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `sala_mensagens_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
+
+--
+-- Restrições para tabelas `sala_participantes`
+--
+ALTER TABLE `sala_participantes`
+  ADD CONSTRAINT `sala_participantes_ibfk_1` FOREIGN KEY (`sala_id`) REFERENCES `salas` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `sala_participantes_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
 
 --
 -- Restrições para tabelas `temporadas`

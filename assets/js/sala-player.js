@@ -6,6 +6,10 @@ class SalaPlayer {
         this.syncInterval = null;
         this.lastSyncTime = 0;
         this.isSyncing = false;
+        this.ws = null;
+        this.userId = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 3;
         
         if (!this.salaId) {
             alert('ID da sala não encontrado');
@@ -17,15 +21,26 @@ class SalaPlayer {
     }
     
     async init() {
-        this.iniciarPlayer();
         await this.carregarSala();
+        this.iniciarPlayer();
+        this.conectarWebSocket();
         this.iniciarSincronizacao();
     }
     
     async carregarSala() {
         try {
+            // Obter user_id da sessão
+            const userResponse = await fetch('api/get_user_session.php');
+            const userData = await userResponse.json();
+            if (userData.success) {
+                this.userId = userData.user_id;
+            console.log('User ID obtido:', this.userId);
+            console.log('Sala ID:', this.salaId);
+            }
+            
             const response = await fetch(`api/sync_sala.php?sala_id=${this.salaId}`);
             const data = await response.json();
+            console.log('Dados da sala:', data);
             
             if (!data.success) {
                 alert(data.error || 'Erro ao carregar sala');
@@ -34,6 +49,7 @@ class SalaPlayer {
             }
             
             this.isLider = data.is_lider;
+            console.log('Is Líder:', this.isLider);
             this.atualizarInterface(data);
         } catch (error) {
             console.error('Erro ao carregar sala:', error);
@@ -53,8 +69,20 @@ class SalaPlayer {
         this.atualizarMensagens(mensagens);
         
         // Configurar player se necessário
-        if (this.player && sala.titulo_id) {
+        if (this.player && sala && sala.titulo_id) {
+            console.log('Configurando vídeo:', sala.titulo_path);
             this.configurarVideo(sala);
+        } else if (sala && sala.titulo_id) {
+            console.log('Player ainda não inicializado, aguardando...');
+            // Aguardar player estar pronto
+            setTimeout(() => {
+                if (this.player) {
+                    console.log('Player agora disponível, configurando vídeo');
+                    this.configurarVideo(sala);
+                }
+            }, 1000);
+        } else {
+            console.log('Player não configurado:', { player: !!this.player, sala: !!sala, titulo_id: sala?.titulo_id });
         }
     }
     
@@ -74,6 +102,7 @@ class SalaPlayer {
             
             // Esconder controles customizados se for visitante
             if (!this.isLider) {
+                console.log('Configurando controles para visitante');
                 const controls = document.getElementById('customControls');
                 const progressContainer = controls.querySelector('.progress-container');
                 const timeDisplay = controls.querySelector('.time-display');
@@ -86,6 +115,8 @@ class SalaPlayer {
                 // Remover onclick da barra de progresso
                 progressContainer.removeAttribute('onclick');
                 progressContainer.style.cursor = 'default';
+            } else {
+                console.log('Configurando controles para líder');
             }
         });
         
@@ -158,6 +189,11 @@ class SalaPlayer {
     }
     
     handleKeyboard(e) {
+        // Não executar atalhos se estiver digitando no chat
+        if (document.activeElement && document.activeElement.id === 'messageInput') {
+            return;
+        }
+        
         if (!this.isLider && ['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
             alert('Apenas o líder pode controlar o player');
             return;
@@ -181,14 +217,20 @@ class SalaPlayer {
     }
     
     configurarVideo(sala) {
-        if (!sala.titulo_path || this.player.src() === `video.php?path=${encodeURIComponent(sala.titulo_path)}`) return;
+        console.log('configurarVideo chamado:', sala.titulo_path);
+        if (!sala.titulo_path || this.player.src() === `video.php?path=${encodeURIComponent(sala.titulo_path)}`) {
+            console.log('Vídeo já carregado ou sem path');
+            return;
+        }
         
+        console.log('Carregando vídeo:', sala.titulo_path);
         this.player.src({
             src: `video.php?path=${encodeURIComponent(sala.titulo_path)}`,
             type: 'video/mp4'
         });
         
         this.player.ready(() => {
+            console.log('Vídeo pronto');
             if (sala.tempo_atual > 0) {
                 this.player.currentTime(parseFloat(sala.tempo_atual));
             }
@@ -210,16 +252,134 @@ class SalaPlayer {
         });
     }
     
+    conectarWebSocket() {
+        // Evitar múltiplas tentativas simultâneas
+        if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+            console.log('WebSocket já tentando conectar...');
+            return;
+        }
+        
+        try {
+            // Usar o domínio atual ou localhost
+            const hostname = window.location.hostname;
+            let wsUrl;
+            
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                wsUrl = `ws://${hostname}:8080`;
+            } else {
+                // Para domínios externos, usar porta 8080 diretamente
+                wsUrl = `ws://${hostname}:8080`;
+            }
+            
+            this.ws = new WebSocket(wsUrl);
+            console.log('Conectando WebSocket em:', wsUrl);
+            
+            this.ws.onopen = () => {
+                console.log('WebSocket conectado');
+                this.reconnectAttempts = 0; // Reset contador
+                // Aguardar um pouco mais para garantir que o player está pronto
+                setTimeout(() => {
+                    const joinMessage = {
+                        type: 'join_sala',
+                        sala_id: parseInt(this.salaId),
+                        user_id: this.userId
+                    };
+                    console.log('Enviando join_sala:', joinMessage);
+                    this.ws.send(JSON.stringify(joinMessage));
+                }, 500); // Aumentado de 100ms para 500ms
+                this.atualizarStatusSync('Conectado');
+                
+                // Iniciar heartbeat
+                this.startHeartbeat();
+            };
+            
+            this.ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('WebSocket mensagem recebida:', data);
+                this.handleWebSocketMessage(data);
+            };
+            
+            this.ws.onclose = () => {
+                console.log('WebSocket desconectado');
+                this.atualizarStatusSync('Desconectado', true);
+                this.stopHeartbeat();
+                this.iniciarPollingFallback();
+            };
+            
+            this.ws.onerror = (error) => {
+                console.error('Erro WebSocket:', error);
+                this.atualizarStatusSync('Erro', true);
+                // Tentar reconectar apenas se não excedeu limite
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        console.log(`Tentando reconectar WebSocket... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                        this.conectarWebSocket();
+                    }, 2000);
+                } else {
+                    console.log('Máximo de tentativas de reconexão atingido, usando apenas HTTP');
+                }
+            };
+        } catch (error) {
+            console.error('Erro ao conectar WebSocket:', error);
+            this.iniciarPollingFallback();
+        }
+    }
+    
+    handleWebSocketMessage(data) {
+        switch (data.type) {
+            case 'player_state':
+                console.log('Estado do player recebido:', data.data);
+                if (!this.isLider) {
+                    this.aplicarSincronizacao(data.data);
+                }
+                this.atualizarStatusSync('Sincronizado');
+                break;
+            case 'chat_message':
+                console.log('Mensagem de chat recebida:', data.data);
+                this.adicionarMensagemChat(data.data);
+                break;
+            case 'error':
+                console.error('Erro WebSocket:', data.message);
+                this.atualizarStatusSync('Erro', true);
+                break;
+            case 'pong':
+                console.log('Pong recebido');
+                break;
+        }
+    }
+    
+    iniciarPollingFallback() {
+        console.log('Usando polling HTTP como fallback');
+        this.atualizarStatusSync('HTTP Polling');
+        if (!this.isLider) {
+            this.syncInterval = setInterval(() => {
+                this.sincronizarComoVisitante();
+            }, 5000); // Reduzido para 5s já que não temos WebSocket
+        }
+    }
+    
+    startHeartbeat() {
+        this.heartbeatInterval = setInterval(() => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // Ping a cada 30 segundos
+    }
+    
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    }
+    
     iniciarSincronizacao() {
         // Líder: sincroniza estado quando há mudanças
         if (this.isLider) {
             this.setupLiderEvents();
-        } else {
-            // Visitantes: fazem polling para sincronizar
-            this.syncInterval = setInterval(() => {
-                this.sincronizarComoVisitante();
-            }, 15000);
         }
+        // Visitantes usam WebSocket ou fallback
     }
     
     setupLiderEvents() {
@@ -241,20 +401,37 @@ class SalaPlayer {
         const tempoVideo = this.player.currentTime();
         const pausado = this.player.paused();
         
-        try {
-            await fetch('api/update_player_sala.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sala_id: this.salaId,
-                    tempo_atual: tempoVideo,
-                    pausado: pausado,
-                    timestamp: timestamp,
-                    acao: acao
-                })
-            });
-        } catch (error) {
-            console.error('Erro ao enviar estado:', error);
+        console.log(`Líder enviando estado: ${acao}`, { tempoVideo, pausado, timestamp });
+        
+        // Enviar via WebSocket se conectado
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            const message = {
+                type: 'player_update',
+                sala_id: parseInt(this.salaId),
+                tempo_atual: tempoVideo,
+                pausado: pausado,
+                timestamp: timestamp
+            };
+            console.log('Enviando via WebSocket:', message);
+            this.ws.send(JSON.stringify(message));
+        } else {
+            console.log('WebSocket não conectado, usando HTTP fallback');
+            // Fallback para HTTP
+            try {
+                await fetch('api/update_player_sala.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sala_id: this.salaId,
+                        tempo_atual: tempoVideo,
+                        pausado: pausado,
+                        timestamp: timestamp,
+                        acao: acao
+                    })
+                });
+            } catch (error) {
+                console.error('Erro ao enviar estado:', error);
+            }
         }
     }
     
@@ -279,28 +456,45 @@ class SalaPlayer {
     }
     
     aplicarSincronizacao(estado) {
-        if (!this.player.readyState()) return;
+        console.log('Aplicando sincronização:', estado);
+        if (!this.player || !this.player.readyState()) {
+            console.log('Player não está pronto, aguardando...');
+            setTimeout(() => this.aplicarSincronizacao(estado), 500);
+            return;
+        }
         
         const agora = Date.now();
         const tempoDecorrido = (agora - estado.timestamp) / 1000;
         const tempoCalculado = estado.pausado ? estado.tempo_atual : estado.tempo_atual + tempoDecorrido;
         
-        // Sincronizar play/pause
+        console.log('Sincronização:', {
+            pausado_lider: estado.pausado,
+            pausado_meu: this.player.paused(),
+            tempo_lider: estado.tempo_atual,
+            tempo_calculado: tempoCalculado,
+            meu_tempo: this.player.currentTime(),
+            diferenca: Math.abs(tempoCalculado - this.player.currentTime())
+        });
+        
+        // SEMPRE sincronizar play/pause imediatamente
         if (estado.pausado && !this.player.paused()) {
+            console.log('PAUSANDO player (líder pausou)');
             this.player.pause();
             const playBtn = document.getElementById('playBtn');
             if (playBtn) playBtn.textContent = '▶';
         } else if (!estado.pausado && this.player.paused()) {
-            this.player.play();
+            console.log('INICIANDO player (líder iniciou)');
+            this.player.play().catch(e => console.log('Erro ao iniciar:', e));
             const playBtn = document.getElementById('playBtn');
             if (playBtn) playBtn.textContent = '⏸';
         }
         
-        // Sincronizar tempo se diferença > 3s
+        // SEMPRE sincronizar tempo se diferença > 1s
         const meuTempo = this.player.currentTime();
         const diferenca = Math.abs(tempoCalculado - meuTempo);
         
-        if (diferenca > 3) {
+        if (diferenca > 1) {
+            console.log(`AJUSTANDO tempo: ${meuTempo} -> ${tempoCalculado}`);
             this.player.currentTime(tempoCalculado);
         }
     }
@@ -359,6 +553,23 @@ class SalaPlayer {
             </div>
         `).join('');
         
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    adicionarMensagemChat(mensagem) {
+        const container = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <span class="message-user">${this.escapeHtml(mensagem.usuario_nome)}</span>
+                <span class="message-time">${this.formatarTempo(mensagem.enviado_em)}</span>
+            </div>
+            <div class="message-text">${this.escapeHtml(mensagem.mensagem)}</div>
+        `;
+        
+        container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
     }
     
@@ -439,12 +650,22 @@ function seek(event) {
         return;
     }
     
+    if (!salaPlayer.player || !salaPlayer.player.readyState()) {
+        console.log('Player não está pronto para seek');
+        return;
+    }
+    
     const container = event.currentTarget;
     const rect = container.getBoundingClientRect();
     const percent = (event.clientX - rect.left) / rect.width;
     const duration = salaPlayer.player.duration();
     
-    salaPlayer.player.currentTime(duration * percent);
+    if (duration && isFinite(duration)) {
+        const newTime = duration * percent;
+        if (isFinite(newTime)) {
+            salaPlayer.player.currentTime(newTime);
+        }
+    }
 }
 
 function toggleFullscreen() {
@@ -457,26 +678,40 @@ async function enviarMensagem() {
     
     if (!mensagem) return;
     
-    try {
-        const response = await fetch('api/enviar_mensagem_sala.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                sala_id: salaPlayer.salaId,
-                mensagem: mensagem
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            input.value = '';
-            // A mensagem aparecerá na próxima sincronização
-        } else {
-            alert(data.error || 'Erro ao enviar mensagem');
+    // Tentar enviar via WebSocket primeiro
+    if (salaPlayer.ws && salaPlayer.ws.readyState === WebSocket.OPEN) {
+        console.log('Enviando mensagem via WebSocket');
+        salaPlayer.ws.send(JSON.stringify({
+            type: 'chat_message',
+            sala_id: parseInt(salaPlayer.salaId),
+            mensagem: mensagem
+        }));
+        input.value = '';
+    } else {
+        console.log('WebSocket não conectado, usando HTTP fallback');
+        // Fallback para HTTP
+        try {
+            const response = await fetch('api/enviar_mensagem_sala.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sala_id: salaPlayer.salaId,
+                    mensagem: mensagem
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                input.value = '';
+                // Forçar atualização do chat
+                setTimeout(() => salaPlayer.carregarSala(), 500);
+            } else {
+                alert(data.error || 'Erro ao enviar mensagem');
+            }
+        } catch (error) {
+            console.error('Erro ao enviar mensagem:', error);
         }
-    } catch (error) {
-        console.error('Erro ao enviar mensagem:', error);
     }
 }
 
@@ -543,9 +778,40 @@ function sincronizarManual() {
 }
 
 function sairSala() {
-    if (confirm('Deseja sair da sala?')) {
-        window.location.href = 'salas.php';
-    }
+    // Criar modal de confirmação
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center;
+        justify-content: center; z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: #181818; border-radius: 8px; padding: 30px;
+            border: 1px solid #333; max-width: 400px; text-align: center;
+        ">
+            <h3 style="color: white; margin: 0 0 20px 0;">🚪 Sair da Sala</h3>
+            <p style="color: #ccc; margin: 0 0 30px 0;">Tem certeza que deseja sair da sala?</p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button onclick="this.closest('div').remove()" style="
+                    padding: 10px 20px; background: #333; color: white;
+                    border: none; border-radius: 6px; cursor: pointer;
+                ">Cancelar</button>
+                <button onclick="window.location.href='salas.php'" style="
+                    padding: 10px 20px; background: #e50914; color: white;
+                    border: none; border-radius: 6px; cursor: pointer;
+                ">Sair</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
 }
 
 // Inicializar quando a página carregar
@@ -555,7 +821,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Limpar intervalos ao sair da página
 window.addEventListener('beforeunload', function() {
-    if (salaPlayer && salaPlayer.syncInterval) {
-        clearInterval(salaPlayer.syncInterval);
+    if (salaPlayer) {
+        if (salaPlayer.syncInterval) clearInterval(salaPlayer.syncInterval);
+        if (salaPlayer.heartbeatInterval) clearInterval(salaPlayer.heartbeatInterval);
+        if (salaPlayer.ws) {
+            salaPlayer.ws.send(JSON.stringify({
+                type: 'leave_sala',
+                sala_id: salaPlayer.salaId
+            }));
+            salaPlayer.ws.close();
+        }
     }
 });

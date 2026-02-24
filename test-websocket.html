@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste WebSocket</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { background: #f8f9fa; padding: 10px; height: 200px; overflow-y: auto; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Teste WebSocket</h1>
+    <div id="status" class="status info">Aguardando...</div>
+    <button onclick="testar()">Testar</button>
+    <button onclick="limpar()">Limpar</button>
+    <div id="log"></div>
+    
+    <script>
+        let ws = null;
+        
+        function log(msg) {
+            document.getElementById('log').innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        }
+        
+        function status(msg, type = 'info') {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = `status ${type}`;
+        }
+        
+        function testar() {
+            if (ws) ws.close();
+            
+            // Testar primeiro localhost
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const url = isLocal ? 'ws://127.0.0.1:8080' : `ws://${window.location.hostname}:8080`;
+            
+            log(`Conectando: ${url}`);
+            log(`Hostname: ${window.location.hostname}`);
+            status('Conectando...', 'info');
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('✅ Conectado!');
+                status('Conectado!', 'success');
+                ws.send(JSON.stringify({type: 'ping'}));
+            };
+            
+            ws.onmessage = (e) => log(`📥 ${e.data}`);
+            ws.onclose = (e) => {
+                log(`❌ Fechado: ${e.code} - ${getCloseReason(e.code)}`);
+                status('Desconectado', 'error');
+            };
+            ws.onerror = (e) => {
+                log('❌ Erro de conexão');
+                status('Erro', 'error');
+            };
+        }
+        
+        function getCloseReason(code) {
+            const reasons = {
+                1000: 'Normal',
+                1001: 'Going Away',
+                1002: 'Protocol Error',
+                1003: 'Unsupported Data',
+                1006: 'Conexão rejeitada/firewall',
+                1011: 'Server Error',
+                1015: 'TLS Handshake'
+            };
+            return reasons[code] || 'Desconhecido';
+        }
+        
+        function limpar() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        setTimeout(testar, 500);
+    </script>
+</body>
+</html>

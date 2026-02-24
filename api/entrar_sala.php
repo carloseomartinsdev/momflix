@@ -10,16 +10,22 @@ if (!isset($_SESSION['user_id'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 $codigo = strtoupper($data['codigo'] ?? '');
+$sala_id = $data['sala_id'] ?? null;
 
-if (empty($codigo)) {
-    echo json_encode(['success' => false, 'error' => 'Código da sala é obrigatório']);
+if (empty($codigo) && !$sala_id) {
+    echo json_encode(['success' => false, 'error' => 'Código ou ID da sala é obrigatório']);
     exit;
 }
 
 try {
     // Verificar se sala existe e está ativa
-    $stmt = $pdo->prepare("SELECT id, nome, lider_id, titulo_id, episodio_id FROM salas WHERE codigo = ? AND ativo = 1");
-    $stmt->execute([$codigo]);
+    if ($sala_id) {
+        $stmt = $pdo->prepare("SELECT id, nome, lider_id, titulo_id, episodio_id FROM salas WHERE id = ? AND ativo = 1");
+        $stmt->execute([$sala_id]);
+    } else {
+        $stmt = $pdo->prepare("SELECT id, nome, lider_id, titulo_id, episodio_id FROM salas WHERE codigo = ? AND ativo = 1");
+        $stmt->execute([$codigo]);
+    }
     $sala = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$sala) {

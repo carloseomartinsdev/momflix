@@ -50,7 +50,10 @@ try {
         }
         
         $response['sala'] = $sala;
-        $response['is_lider'] = $sala['lider_id'] == $_SESSION['user_id'];
+        $response['is_lider'] = ($sala['lider_id'] == $_SESSION['user_id']);
+        
+        // Debug log
+        error_log("Sala ID: {$sala_id}, Lider ID: {$sala['lider_id']}, User ID: {$_SESSION['user_id']}, Is Lider: " . ($response['is_lider'] ? 'true' : 'false'));
     }
     
     // Buscar participantes

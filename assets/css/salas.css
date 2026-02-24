@@ -56,14 +56,34 @@ html, body {
 .sala-card {
     background: #181818;
     border-radius: 8px;
-    padding: 20px;
     border: 1px solid #333;
     transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    overflow: hidden;
 }
 
 .sala-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.sala-capa {
+    width: 120px;
+    height: 160px;
+    flex-shrink: 0;
+}
+
+.sala-capa img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sala-content {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .sala-header {
@@ -386,6 +406,46 @@ html, body {
 .btn-voltar:hover {
     background: #555;
     transform: translateY(-1px);
+}
+
+.tipo-sala-btn {
+    flex: 1;
+    padding: 15px;
+    background: #2a2a2a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    color: #ccc;
+}
+
+.tipo-sala-btn:hover {
+    border-color: #555;
+    background: #333;
+}
+
+.tipo-sala-btn.active {
+    border-color: #e50914;
+    background: #1a0a0a;
+    color: white;
+    transform: scale(1.02);
+}
+
+.tipo-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.tipo-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.tipo-desc {
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 .minhas-salas h2 {

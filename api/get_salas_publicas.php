@@ -11,17 +11,18 @@ if (!isset($_SESSION['user_id'])) {
 try {
     $stmt = $pdo->prepare("
         SELECT DISTINCT s.id, s.nome, s.codigo, t.nome as titulo, t.capa,
-               COUNT(sp2.id) as participantes_count,
-               (s.lider_id = ?) as is_lider
+               COUNT(sp.id) as participantes_count,
+               (s.lider_id = ?) as is_lider,
+               u.username as lider_nome
         FROM salas s
         JOIN titulos t ON s.titulo_id = t.id
-        JOIN sala_participantes sp ON s.id = sp.sala_id AND sp.usuario_id = ? AND sp.ativo = 1
-        LEFT JOIN sala_participantes sp2 ON s.id = sp2.sala_id AND sp2.ativo = 1
-        WHERE s.ativo = 1
-        GROUP BY s.id, s.nome, s.codigo, t.nome, t.capa, s.lider_id
+        JOIN usuarios u ON s.lider_id = u.id
+        LEFT JOIN sala_participantes sp ON s.id = sp.sala_id AND sp.ativo = 1
+        WHERE s.ativo = 1 AND s.is_publica = 1
+        GROUP BY s.id, s.nome, s.codigo, t.nome, t.capa, s.lider_id, u.username
         ORDER BY s.criado_em DESC
     ");
-    $stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
+    $stmt->execute([$_SESSION['user_id']]);
     $salas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     echo json_encode([

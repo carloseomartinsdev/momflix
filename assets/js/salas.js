@@ -4,6 +4,13 @@ let episodioSelecionado = null;
 // Carregar salas ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     carregarMinhasSalas();
+    carregarSalasPublicas();
+    
+    // Atualizar salas a cada 30 segundos
+    setInterval(() => {
+        carregarMinhasSalas();
+        carregarSalasPublicas();
+    }, 30000);
 });
 
 function mostrarModalCriar() {
@@ -150,8 +157,19 @@ function selecionarEpisodio(episodioId, temporada, tag, titulo) {
     };
 }
 
+function selecionarTipoSala(tipo) {
+    // Remover classe active de todos os botões
+    document.querySelectorAll('.tipo-sala-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Adicionar classe active ao botão selecionado
+    document.querySelector(`[data-tipo="${tipo}"]`).classList.add('active');
+}
+
 async function criarSala() {
     const nome = document.getElementById('nomeSala').value.trim();
+    const tipoSala = document.querySelector('.tipo-sala-btn.active').dataset.tipo;
     
     if (!nome) {
         alert('Digite um nome para a sala');
@@ -172,7 +190,8 @@ async function criarSala() {
     try {
         const payload = {
             nome: nome,
-            titulo_id: tituloSelecionado.id
+            titulo_id: tituloSelecionado.id,
+            is_publica: tipoSala === 'publica'
         };
         
         if (episodioSelecionado) {
@@ -188,9 +207,36 @@ async function criarSala() {
         const data = await response.json();
         
         if (data.success) {
-            alert(`Sala criada! Código: ${data.codigo}`);
-            fecharModal('modalCriar');
-            window.location.href = `sala.php?id=${data.sala_id}`;
+            // Criar modal de sucesso
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: #181818; border-radius: 8px; padding: 30px;
+                    border: 1px solid #333; max-width: 400px; text-align: center;
+                ">
+                    <h3 style="color: white; margin: 0 0 20px 0;">🎉 Sala Criada!</h3>
+                    <p style="color: #ccc; margin: 0 0 10px 0;">Sua sala foi criada com sucesso!</p>
+                    <p style="color: #e50914; font-weight: bold; margin: 0 0 30px 0; font-size: 18px;">Código: ${data.codigo}</p>
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button onclick="this.closest('div').remove(); fecharModal('modalCriar')" style="
+                            padding: 10px 20px; background: #333; color: white;
+                            border: none; border-radius: 6px; cursor: pointer;
+                        ">Ficar Aqui</button>
+                        <button onclick="window.location.href='sala.php?id=${data.sala_id}'" style="
+                            padding: 10px 20px; background: #e50914; color: white;
+                            border: none; border-radius: 6px; cursor: pointer;
+                        ">Entrar na Sala</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
         } else {
             alert(data.error || 'Erro ao criar sala');
         }
@@ -231,34 +277,131 @@ async function entrarSala() {
 
 async function carregarMinhasSalas() {
     try {
+        console.log('Carregando salas...');
         const response = await fetch('api/get_minhas_salas.php');
         const data = await response.json();
+        
+        console.log('Resposta da API:', data);
         
         const container = document.getElementById('listaSalas');
         
         if (data.success && data.salas.length > 0) {
+            console.log('Salas encontradas:', data.salas.length);
             container.innerHTML = data.salas.map(sala => `
                 <div class="sala-card">
-                    <div class="sala-header">
-                        <div class="sala-nome">${sala.nome}</div>
-                        <div class="sala-codigo">${sala.codigo}</div>
+                    <div class="sala-capa">
+                        <img src="image.php?path=${encodeURIComponent(sala.capa)}" alt="${sala.titulo}" onerror="this.src='logoS.png'">
                     </div>
-                    <div class="sala-info">
-                        <div class="sala-titulo">${sala.titulo}</div>
-                        <div class="sala-participantes">${sala.participantes_count} participante(s)</div>
-                    </div>
-                    <div class="sala-actions">
-                        <button class="btn-entrar-sala" onclick="window.location.href='sala.php?id=${sala.id}'">
-                            Entrar
-                        </button>
+                    <div class="sala-content">
+                        <div class="sala-header">
+                            <div class="sala-nome">${sala.nome}</div>
+                            <div class="sala-codigo">${sala.codigo}</div>
+                        </div>
+                        <div class="sala-info">
+                            <div class="sala-titulo">${sala.titulo}</div>
+                            <div class="sala-participantes">${sala.participantes_count} participante(s)</div>
+                        </div>
+                        <div class="sala-actions">
+                            <button class="btn-entrar-sala" onclick="window.location.href='sala.php?id=${sala.id}'">
+                                Entrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
         } else {
+            console.log('Nenhuma sala encontrada');
             container.innerHTML = '<p style="color: #ccc; text-align: center;">Nenhuma sala ativa</p>';
         }
     } catch (error) {
         console.error('Erro ao carregar salas:', error);
+        document.getElementById('listaSalas').innerHTML = '<p style="color: #f00; text-align: center;">Erro ao carregar salas</p>';
+    }
+}
+
+async function carregarSalasPublicas() {
+    try {
+        console.log('Carregando salas públicas...');
+        const response = await fetch('api/get_salas_publicas.php');
+        const data = await response.json();
+        
+        console.log('Salas públicas:', data);
+        
+        const container = document.getElementById('salasPublicas');
+        
+        if (data.success && data.salas.length > 0) {
+            container.innerHTML = data.salas.map(sala => `
+                <div class="sala-card">
+                    <div class="sala-capa">
+                        <img src="image.php?path=${encodeURIComponent(sala.capa)}" alt="${sala.titulo}" onerror="this.src='logoS.png'">
+                    </div>
+                    <div class="sala-content">
+                        <div class="sala-header">
+                            <div class="sala-nome">${sala.nome}</div>
+                            <div class="sala-codigo">${sala.codigo}</div>
+                        </div>
+                        <div class="sala-info">
+                            <div class="sala-titulo">${sala.titulo}</div>
+                            <div class="sala-participantes">${sala.participantes_count} participante(s)</div>
+                            <div class="sala-lider">Líder: ${sala.lider_nome}</div>
+                        </div>
+                        <div class="sala-actions">
+                            <button class="btn-entrar-sala" onclick="entrarSalaPublica(${sala.id})">
+                                Entrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="color: #ccc; text-align: center;">Nenhuma sala pública disponível</p>';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar salas públicas:', error);
+        document.getElementById('salasPublicas').innerHTML = '<p style="color: #f00; text-align: center;">Erro ao carregar salas públicas</p>';
+    }
+}
+
+async function entrarSalaPublica(salaId) {
+    try {
+        const response = await fetch('api/entrar_sala.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sala_id: salaId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = `sala.php?id=${salaId}`;
+        } else {
+            alert(data.error || 'Erro ao entrar na sala');
+        }
+    } catch (error) {
+        console.error('Erro ao entrar na sala:', error);
+        alert('Erro ao entrar na sala');
+    }
+}
+
+async function limparSalasVazias() {
+    if (!confirm('Desativar salas sem participantes ativos? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('api/limpar_salas.php', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`${data.salas_desativadas} salas desativadas e ${data.participantes_desativados} participantes removidos.`);
+            carregarMinhasSalas();
+            carregarSalasPublicas();
+        } else {
+            alert(data.error || 'Erro ao limpar salas');
+        }
+    } catch (error) {
+        console.error('Erro ao limpar salas:', error);
+        alert('Erro ao limpar salas');
     }
 }
 

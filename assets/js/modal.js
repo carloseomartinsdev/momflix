@@ -52,6 +52,12 @@ const Modal = {
             btnPlay.innerHTML = '▶ Assistir';
             btnPlay.onclick = () => Player.assistirFilme(titulo.id, titulo.path, titulo.nome);
             actionsContainer.appendChild(btnPlay);
+            
+            const btnSala = document.createElement('button');
+            btnSala.className = 'btn-sala';
+            btnSala.innerHTML = '👥 Assistir com Amigos';
+            btnSala.onclick = () => Modal.criarSalaRapida(titulo);
+            actionsContainer.appendChild(btnSala);
         }
         
         // Body com informações
@@ -282,6 +288,63 @@ const Modal = {
     
     editarSaga(id) {
         ModalEditar.abrirTitulo(id);
+    },
+    
+    async criarSalaRapida(titulo) {
+        try {
+            const response = await fetch('api/criar_sala.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nome: `Sala: ${titulo.nome}`,
+                    titulo_id: titulo.id,
+                    is_publica: false
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Fechar modal atual
+                this.fechar();
+                
+                // Criar modal de sucesso
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                    justify-content: center; z-index: 10000;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="
+                        background: #181818; border-radius: 8px; padding: 30px;
+                        border: 1px solid #333; max-width: 400px; text-align: center;
+                    ">
+                        <h3 style="color: white; margin: 0 0 20px 0;">🎉 Sala Criada!</h3>
+                        <p style="color: #ccc; margin: 0 0 10px 0;">Compartilhe o código com seus amigos:</p>
+                        <p style="color: #e50914; font-weight: bold; margin: 0 0 30px 0; font-size: 24px;">${data.codigo}</p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button onclick="this.closest('div').remove()" style="
+                                padding: 10px 20px; background: #333; color: white;
+                                border: none; border-radius: 6px; cursor: pointer;
+                            ">Fechar</button>
+                            <button onclick="window.location.href='sala.php?id=${data.sala_id}'" style="
+                                padding: 10px 20px; background: #e50914; color: white;
+                                border: none; border-radius: 6px; cursor: pointer;
+                            ">Entrar na Sala</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } else {
+                alert(data.error || 'Erro ao criar sala');
+            }
+        } catch (error) {
+            console.error('Erro ao criar sala:', error);
+            alert('Erro ao criar sala');
+        }
     },
     
     fechar() {
