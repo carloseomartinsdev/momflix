@@ -309,6 +309,7 @@
     padding: 15px;
     gap: 10px;
     border-top: 1px solid #333;
+    position: relative;
 }
 
 .chat-input input {
@@ -333,6 +334,48 @@
 
 .chat-input button:hover {
     background: #45a049;
+}
+
+.emoji-btn {
+    background: #333 !important;
+    font-size: 16px;
+    padding: 8px 12px !important;
+}
+
+.emoji-btn:hover {
+    background: #555 !important;
+}
+
+.emoji-picker {
+    position: absolute;
+    bottom: 60px;
+    right: 60px;
+    background: #2a2a2a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
+    max-width: 240px;
+}
+
+.emoji-grid span {
+    font-size: 20px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: background 0.2s;
+}
+
+.emoji-grid span:hover {
+    background: #333;
 }
 
 /* Responsivo */

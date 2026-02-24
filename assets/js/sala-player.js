@@ -10,6 +10,8 @@ class SalaPlayer {
         this.userId = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 3;
+        this.spriteLoaded = false;
+        this.spriteUrl = null;
         
         if (!this.salaId) {
             alert('ID da sala não encontrado');
@@ -38,6 +40,21 @@ class SalaPlayer {
             console.log('Sala ID:', this.salaId);
             }
             
+            // Tentar reconectar usando sala_id diretamente
+            const reconnectResponse = await fetch('api/entrar_sala.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sala_id: this.salaId })
+            });
+            const reconnectData = await reconnectResponse.json();
+            
+            if (reconnectData.success) {
+                console.log('Reconectado automaticamente na sala');
+            }
+            
+            // Verificar se precisa promover novo líder
+            await this.verificarLideranca();
+            
             const response = await fetch(`api/sync_sala.php?sala_id=${this.salaId}`);
             const data = await response.json();
             console.log('Dados da sala:', data);
@@ -63,7 +80,7 @@ class SalaPlayer {
         document.getElementById('salaNome').innerHTML = `Sala: ${sala.nome} <span id="salaCodigo" class="codigo-badge">${sala.codigo}</span>`;
         
         // Atualizar participantes
-        this.atualizarParticipantes(participantes);
+        this.atualizarListaParticipantes(participantes);
         
         // Atualizar mensagens
         this.atualizarMensagens(mensagens);
@@ -181,7 +198,8 @@ class SalaPlayer {
         
         clearTimeout(this.hideTimeout);
         
-        if (!this.player.paused() || document.fullscreenElement) {
+        // Só esconder automaticamente se estiver em fullscreen E o vídeo estiver tocando
+        if (document.fullscreenElement && !this.player.paused()) {
             this.hideTimeout = setTimeout(() => {
                 controls.classList.add('hidden');
             }, 3000);
@@ -228,6 +246,9 @@ class SalaPlayer {
             src: `video.php?path=${encodeURIComponent(sala.titulo_path)}`,
             type: 'video/mp4'
         });
+        
+        // Carregar sprite
+        this.carregarSprite(sala.titulo_id);
         
         this.player.ready(() => {
             console.log('Vídeo pronto');
@@ -379,7 +400,11 @@ class SalaPlayer {
         if (this.isLider) {
             this.setupLiderEvents();
         }
-        // Visitantes usam WebSocket ou fallback
+        
+        // Atualizar participantes periodicamente
+        this.participantesInterval = setInterval(() => {
+            this.atualizarParticipantes();
+        }, 5000);
     }
     
     setupLiderEvents() {
@@ -527,7 +552,20 @@ class SalaPlayer {
         });
     }
     
-    atualizarParticipantes(participantes) {
+    async atualizarParticipantes() {
+        try {
+            const response = await fetch(`api/sync_sala.php?sala_id=${this.salaId}&chat_only=1`);
+            const data = await response.json();
+            
+            if (data.success && data.participantes) {
+                this.atualizarListaParticipantes(data.participantes);
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar participantes:', error);
+        }
+    }
+    
+    atualizarListaParticipantes(participantes) {
         const container = document.getElementById('participantesList');
         const count = document.getElementById('participantesCount');
         
@@ -571,6 +609,11 @@ class SalaPlayer {
         
         container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
+        
+        // Mostrar notificação em fullscreen
+        if (document.fullscreenElement) {
+            this.mostrarNotificacaoFullscreen(mensagem);
+        }
     }
     
     atualizarStatusSync(message, isError = false) {
@@ -593,6 +636,110 @@ class SalaPlayer {
         return div.innerHTML;
     }
     
+    mostrarNotificacaoFullscreen(mensagem) {
+        console.log('Tentando mostrar notificação fullscreen:', mensagem);
+        console.log('Está em fullscreen:', !!document.fullscreenElement);
+        
+        // Encontrar o container em fullscreen
+        const fullscreenElement = document.fullscreenElement;
+        if (!fullscreenElement) return;
+        
+        // Criar notificação
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #e50914;
+            max-width: 300px;
+            z-index: 999999;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            animation: slideInRight 0.3s ease-out;
+            pointer-events: none;
+        `;
+        
+        notification.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px; color: #e50914;">
+                ${this.escapeHtml(mensagem.usuario_nome)}
+            </div>
+            <div style="line-height: 1.4;">
+                ${this.escapeHtml(mensagem.mensagem)}
+            </div>
+        `;
+        
+        // Adicionar CSS da animação se não existir
+        if (!document.getElementById('fullscreen-chat-styles')) {
+            const style = document.createElement('style');
+            style.id = 'fullscreen-chat-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Adicionar ao elemento em fullscreen em vez do body
+        fullscreenElement.appendChild(notification);
+        console.log('Notificação adicionada ao elemento fullscreen');
+        
+        // Remover após 4 segundos
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
+    }
+    
+    carregarSprite(tituloId) {
+        if (!tituloId) return;
+        
+        fetch(`api/get_sprite.php?idTitulo=${tituloId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.sprite) {
+                    this.spriteUrl = data.sprite;
+                    this.spriteLoaded = true;
+                    const preview = document.getElementById('spritePreview');
+                    preview.style.backgroundImage = `url(${data.sprite})`;
+                    console.log('Sprite carregado:', data.sprite);
+                } else {
+                    this.spriteLoaded = false;
+                    this.spriteUrl = null;
+                    console.log('Sprite não encontrado');
+                }
+            })
+            .catch(err => {
+                console.error('Erro ao carregar sprite:', err);
+                this.spriteLoaded = false;
+            });
+    }
+    
     atualizarIndicadoresSync(tempoLider, meuTempo, diferenca) {
         const formatTime = (seconds) => {
             const mins = Math.floor(seconds / 60);
@@ -603,6 +750,21 @@ class SalaPlayer {
         document.getElementById('leaderTime').textContent = formatTime(tempoLider);
         document.getElementById('myTime').textContent = formatTime(meuTempo);
         document.getElementById('timeDiff').textContent = `${diferenca.toFixed(1)}s`;
+    }
+    
+    async verificarLideranca() {
+        try {
+            const response = await fetch(`api/promover_lider.php?sala_id=${this.salaId}`);
+            const data = await response.json();
+            
+            if (data.success && data.promoted && data.new_leader_id == this.userId) {
+                console.log('Promovido a líder!');
+                this.isLider = true;
+                this.atualizarStatusSync('Promovido a Líder');
+            }
+        } catch (error) {
+            console.error('Erro ao verificar liderança:', error);
+        }
     }
     
     updateProgress() {
@@ -721,20 +883,16 @@ function handleEnter(event) {
     }
 }
 
-function skipBackward() {
-    if (!salaPlayer.isLider) {
-        alert('Apenas o líder pode controlar o player');
-        return;
-    }
-    salaPlayer.player.currentTime(salaPlayer.player.currentTime() - 10);
+function toggleEmojiPicker() {
+    const picker = document.getElementById('emojiPicker');
+    picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
 }
 
-function skipForward() {
-    if (!salaPlayer.isLider) {
-        alert('Apenas o líder pode controlar o player');
-        return;
-    }
-    salaPlayer.player.currentTime(salaPlayer.player.currentTime() + 10);
+function addEmoji(emoji) {
+    const input = document.getElementById('messageInput');
+    input.value += emoji;
+    input.focus();
+    document.getElementById('emojiPicker').style.display = 'none';
 }
 
 function toggleMute() {
@@ -764,11 +922,37 @@ function changeSpeed() {
 }
 
 function showPreview(event) {
-    // Funcionalidade de preview será implementada depois se necessário
+    if (!salaPlayer.player || !salaPlayer.player.duration() || !salaPlayer.spriteLoaded) return;
+    
+    const container = event.currentTarget;
+    const rect = container.getBoundingClientRect();
+    const percent = (event.clientX - rect.left) / rect.width;
+    const duration = salaPlayer.player.duration();
+    const time = duration * percent;
+    
+    const preview = document.getElementById('spritePreview');
+    const timeDisplay = document.getElementById('spriteTime');
+    
+    // Calcular posição do sprite (grid 10x10)
+    const frameIndex = Math.floor(percent * 100);
+    const row = Math.floor(frameIndex / 10);
+    const col = frameIndex % 10;
+    
+    // Posicionar preview igual ao player principal
+    preview.style.left = event.clientX - rect.left + 'px';
+    preview.style.backgroundPosition = `-${col * 160}px -${row * 90}px`;
+    
+    // Mostrar tempo
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    
+    preview.style.display = 'block';
 }
 
 function hidePreview() {
-    // Funcionalidade de preview será implementada depois se necessário
+    const preview = document.getElementById('spritePreview');
+    preview.style.display = 'none';
 }
 
 function sincronizarManual() {
@@ -824,6 +1008,7 @@ window.addEventListener('beforeunload', function() {
     if (salaPlayer) {
         if (salaPlayer.syncInterval) clearInterval(salaPlayer.syncInterval);
         if (salaPlayer.heartbeatInterval) clearInterval(salaPlayer.heartbeatInterval);
+        if (salaPlayer.participantesInterval) clearInterval(salaPlayer.participantesInterval);
         if (salaPlayer.ws) {
             salaPlayer.ws.send(JSON.stringify({
                 type: 'leave_sala',

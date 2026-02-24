@@ -28,8 +28,6 @@
                 <video id="salaPlayer" class="video-js vjs-default-skin" preload="auto"></video>
                 <div class="custom-controls" id="customControls">
                     <button id="playBtn" class="control-btn" onclick="togglePlay()">▶</button>
-                    <button class="control-btn" onclick="skipBackward()">⏪</button>
-                    <button class="control-btn" onclick="skipForward()">⏩</button>
                     <div class="progress-container" onclick="seek(event)" onmousemove="showPreview(event)" onmouseleave="hidePreview()">
                         <div class="progress-bar" id="progressBar"></div>
                         <div class="sprite-preview" id="spritePreview">
@@ -64,7 +62,36 @@
                 
                 <div class="chat-input">
                     <input type="text" id="messageInput" placeholder="Digite sua mensagem..." maxlength="500" onkeypress="handleEnter(event)">
+                    <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
                     <button onclick="enviarMensagem()">Enviar</button>
+                    <div class="emoji-picker" id="emojiPicker" style="display: none;">
+                        <div class="emoji-grid">
+                            <span onclick="addEmoji('😀')">😀</span>
+                            <span onclick="addEmoji('😂')">😂</span>
+                            <span onclick="addEmoji('😍')">😍</span>
+                            <span onclick="addEmoji('😎')">😎</span>
+                            <span onclick="addEmoji('😊')">😊</span>
+                            <span onclick="addEmoji('😉')">😉</span>
+                            <span onclick="addEmoji('😘')">😘</span>
+                            <span onclick="addEmoji('😜')">😜</span>
+                            <span onclick="addEmoji('🙄')">🙄</span>
+                            <span onclick="addEmoji('😏')">😏</span>
+                            <span onclick="addEmoji('😢')">😢</span>
+                            <span onclick="addEmoji('😭')">😭</span>
+                            <span onclick="addEmoji('😱')">😱</span>
+                            <span onclick="addEmoji('😡')">😡</span>
+                            <span onclick="addEmoji('😌')">😌</span>
+                            <span onclick="addEmoji('😴')">😴</span>
+                            <span onclick="addEmoji('👍')">👍</span>
+                            <span onclick="addEmoji('👎')">👎</span>
+                            <span onclick="addEmoji('👏')">👏</span>
+                            <span onclick="addEmoji('❤️')">❤️</span>
+                            <span onclick="addEmoji('🔥')">🔥</span>
+                            <span onclick="addEmoji('🎉')">🎉</span>
+                            <span onclick="addEmoji('🎆')">🎆</span>
+                            <span onclick="addEmoji('🎈')">🎈</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
