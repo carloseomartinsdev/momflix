@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Tempo de geração: 24/02/2026 às 00:19
+-- Tempo de geração: 03/03/2026 às 01:50
 -- Versão do servidor: 10.4.32-MariaDB
 -- Versão do PHP: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Banco de dados: `mom_flix`
 --
+CREATE DATABASE IF NOT EXISTS `mom_flix` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `mom_flix`;
 
 -- --------------------------------------------------------
 
@@ -106,6 +108,21 @@ CREATE TABLE `generos` (
 -- --------------------------------------------------------
 
 --
+-- Estrutura para tabela `historico`
+--
+
+CREATE TABLE `historico` (
+  `id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `titulo_id` int(11) NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `tipo` enum('filme','serie') NOT NULL,
+  `assistido_em` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estrutura para tabela `salas`
 --
 
@@ -121,7 +138,8 @@ CREATE TABLE `salas` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   `ativo` tinyint(1) DEFAULT 1,
   `timestamp_acao` bigint(20) DEFAULT 0,
-  `titulo_path` text DEFAULT NULL
+  `titulo_path` text DEFAULT NULL,
+  `is_publica` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -224,11 +242,20 @@ CREATE TABLE `titulo_genero` (
 CREATE TABLE `usuarios` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `profile_icon` varchar(10) DEFAULT '?',
   `password` varchar(255) NOT NULL,
   `is_admin` tinyint(1) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `profile_icon` varchar(10) DEFAULT '?'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Despejando dados para a tabela `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `username`, `password`, `is_admin`, `created_at`, `profile_icon`) VALUES
+(1, 'carlos', '$2y$10$kkO43e8Yy6E8HVwjouVVWukvHBFMbdvy/0atB/dXRYIeG8CY01oMq', 1, '2026-02-28 15:27:57', '👤'),
+(2, 'visitante', '$2y$10$WXVOJgy.5O7x7OzNCaqEYexOwyxhgAsZEJdeh2WFdjuXHlhseGCla', 0, '2026-02-28 15:27:57', '👤'),
+(3, 'ricardo', '$2y$10$WXVOJgy.5O7x7OzNCaqEYexOwyxhgAsZEJdeh2WFdjuXHlhseGCla', 0, '2026-02-28 15:27:57', '👤');
 
 -- --------------------------------------------------------
 
@@ -285,6 +312,13 @@ ALTER TABLE `generos`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `genero` (`genero`),
   ADD KEY `idx_genero` (`genero`);
+
+--
+-- Índices de tabela `historico`
+--
+ALTER TABLE `historico`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_usuario_data` (`usuario_id`,`assistido_em`);
 
 --
 -- Índices de tabela `salas`
@@ -378,6 +412,12 @@ ALTER TABLE `generos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de tabela `historico`
+--
+ALTER TABLE `historico`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de tabela `salas`
 --
 ALTER TABLE `salas`
@@ -405,7 +445,7 @@ ALTER TABLE `temporadas`
 -- AUTO_INCREMENT de tabela `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Restrições para tabelas despejadas
@@ -428,6 +468,12 @@ ALTER TABLE `episodios`
 --
 ALTER TABLE `filmes_saga`
   ADD CONSTRAINT `filmes_saga_ibfk_1` FOREIGN KEY (`saga_id`) REFERENCES `titulos` (`id`) ON DELETE CASCADE;
+
+--
+-- Restrições para tabelas `historico`
+--
+ALTER TABLE `historico`
+  ADD CONSTRAINT `historico_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
 
 --
 -- Restrições para tabelas `salas`
@@ -462,20 +508,6 @@ ALTER TABLE `temporadas`
 --
 ALTER TABLE `titulos_bloqueados`
   ADD CONSTRAINT `titulos_bloqueados_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
-
---
--- Restrições para tabelas `titulo_genero`
---
-ALTER TABLE `titulo_genero`
-  ADD CONSTRAINT `titulo_genero_ibfk_1` FOREIGN KEY (`titulo_id`) REFERENCES `titulos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `titulo_genero_ibfk_2` FOREIGN KEY (`genero_id`) REFERENCES `generos` (`id`) ON DELETE CASCADE;
-
---
--- Restrições para tabelas `videos`
---
-ALTER TABLE `videos`
-  ADD CONSTRAINT `videos_ibfk_1` FOREIGN KEY (`id_titulo`) REFERENCES `titulos` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `videos_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste WebSocket SSL</title>
+</head>
+<body>
+    <h1>Teste WebSocket SSL</h1>
+    <div id="status">Conectando...</div>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message) {
+            log.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+        
+        try {
+            const ws = new WebSocket('wss://momflix.momsys.com.br:8443');
+            
+            ws.onopen = function() {
+                status.textContent = 'Conectado!';
+                status.style.color = 'green';
+                addLog('WebSocket conectado com sucesso');
+            };
+            
+            ws.onerror = function(error) {
+                status.textContent = 'Erro na conexão';
+                status.style.color = 'red';
+                addLog('Erro WebSocket: ' + JSON.stringify(error));
+                
+                // Tentar HTTP como fallback
+                addLog('Tentando fallback para WS (HTTP)...');
+                testHttpWebSocket();
+            };
+            
+            ws.onclose = function(event) {
+                status.textContent = 'Desconectado';
+                status.style.color = 'orange';
+                addLog('WebSocket desconectado - Código: ' + event.code + ', Razão: ' + event.reason);
+            };
+            
+        } catch (error) {
+            status.textContent = 'Erro ao criar WebSocket';
+            status.style.color = 'red';
+            addLog('Erro: ' + error.message);
+        }
+        
+        function testHttpWebSocket() {
+            try {
+                const wsHttp = new WebSocket('ws://momflix.momsys.com.br:8081');
+                
+                wsHttp.onopen = function() {
+                    status.textContent = 'Conectado via HTTP!';
+                    status.style.color = 'green';
+                    addLog('WebSocket HTTP conectado com sucesso');
+                };
+                
+                wsHttp.onerror = function(error) {
+                    addLog('Erro HTTP WebSocket: ' + JSON.stringify(error));
+                };
+                
+                wsHttp.onclose = function(event) {
+                    addLog('HTTP WebSocket desconectado - Código: ' + event.code);
+                };
+                
+            } catch (error) {
+                addLog('Erro HTTP WebSocket: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

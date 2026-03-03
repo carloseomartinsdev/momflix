@@ -12,6 +12,9 @@ class SalaPlayer {
         this.maxReconnectAttempts = 3;
         this.spriteLoaded = false;
         this.spriteUrl = null;
+        this.audioEnabled = false;
+        this.localStream = null;
+        this.peerConnections = new Map();
         
         if (!this.salaId) {
             alert('ID da sala não encontrado');
@@ -107,11 +110,21 @@ class SalaPlayer {
         this.player = videojs('salaPlayer', {
             fluid: false,
             responsive: false,
-            controls: false
+            controls: false,
+            playsinline: true,
+            preload: 'metadata'
         });
         
         this.player.ready(() => {
             this.player.controls(false);
+            
+            // Mobile: permitir reprodução inline
+            const videoEl = this.player.el().querySelector('video');
+            if (videoEl) {
+                videoEl.setAttribute('playsinline', 'true');
+                videoEl.setAttribute('webkit-playsinline', 'true');
+            }
+            
             const vjsControlBar = this.player.el().querySelector('.vjs-control-bar');
             if (vjsControlBar) {
                 vjsControlBar.style.display = 'none';
@@ -258,13 +271,21 @@ class SalaPlayer {
             
             // Sempre iniciar com o estado correto
             if (!sala.pausado) {
-                this.player.play().then(() => {
-                    const playBtn = document.getElementById('playBtn');
-                    if (playBtn) playBtn.textContent = '⏸';
-                }).catch(() => {
-                    const playBtn = document.getElementById('playBtn');
-                    if (playBtn) playBtn.textContent = '▶';
-                });
+                // Mobile: usar promise para detectar bloqueio
+                const playPromise = this.player.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        const playBtn = document.getElementById('playBtn');
+                        if (playBtn) playBtn.textContent = '⏸';
+                    }).catch(() => {
+                        console.log('Autoplay bloqueado - usuário deve interagir');
+                        const playBtn = document.getElementById('playBtn');
+                        if (playBtn) {
+                            playBtn.textContent = '▶';
+                            playBtn.style.backgroundColor = '#e50914';
+                        }
+                    });
+                }
             } else {
                 this.player.pause();
                 const playBtn = document.getElementById('playBtn');
@@ -283,13 +304,18 @@ class SalaPlayer {
         try {
             // Usar o domínio atual ou localhost
             const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
             let wsUrl;
             
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                wsUrl = `ws://${hostname}:8080`;
+                wsUrl = `ws://${hostname}:8081`;
             } else {
-                // Para domínios externos, usar porta 8080 diretamente
-                wsUrl = `ws://${hostname}:8080`;
+                // Para domínios externos, usar WSS se o site estiver em HTTPS
+                if (protocol === 'https:') {
+                    wsUrl = `wss://${hostname}:8080`;
+                } else {
+                    wsUrl = `ws://${hostname}:8081`;
+                }
             }
             
             this.ws = new WebSocket(wsUrl);
@@ -359,6 +385,18 @@ class SalaPlayer {
             case 'chat_message':
                 console.log('Mensagem de chat recebida:', data.data);
                 this.adicionarMensagemChat(data.data);
+                break;
+            case 'user_joined_audio':
+                this.handleUserJoinedAudio(data);
+                break;
+            case 'audio_offer':
+                this.handleAudioOffer(data.data);
+                break;
+            case 'audio_answer':
+                this.handleAudioAnswer(data.data);
+                break;
+            case 'ice_candidate':
+                this.handleIceCandidate(data.data);
                 break;
             case 'error':
                 console.error('Erro WebSocket:', data.message);
@@ -509,7 +547,19 @@ class SalaPlayer {
             if (playBtn) playBtn.textContent = '▶';
         } else if (!estado.pausado && this.player.paused()) {
             console.log('INICIANDO player (líder iniciou)');
-            this.player.play().catch(e => console.log('Erro ao iniciar:', e));
+            // Mobile: tentar play com fallback
+            const playPromise = this.player.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    console.log('Autoplay bloqueado, aguardando interação');
+                    // Mostrar indicação visual
+                    const playBtn = document.getElementById('playBtn');
+                    if (playBtn) {
+                        playBtn.style.backgroundColor = '#e50914';
+                        playBtn.style.animation = 'pulse 1s infinite';
+                    }
+                });
+            }
             const playBtn = document.getElementById('playBtn');
             if (playBtn) playBtn.textContent = '⏸';
         }
@@ -767,6 +817,228 @@ class SalaPlayer {
         }
     }
     
+    async toggleAudio() {
+        if (!this.audioEnabled) {
+            await this.iniciarAudio();
+        } else {
+            this.pararAudio();
+        }
+    }
+    
+    async iniciarAudio() {
+        try {
+            this.audioEnabled = true;
+            document.getElementById('audioBtn').textContent = '🔊';
+            document.getElementById('audioBtn').title = 'Desligar áudio';
+            
+            // Conectar com outros participantes para escutar
+            this.conectarComParticipantes();
+        } catch (error) {
+            console.error('Erro ao iniciar áudio:', error);
+        }
+    }
+    
+    async toggleMicrofone() {
+        if (!this.localStream) {
+            await this.iniciarMicrofone();
+        } else {
+            this.pararMicrofone();
+        }
+    }
+    
+    async iniciarMicrofone() {
+        try {
+            // Verificar se está em HTTPS ou localhost
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                alert('Microfone requer HTTPS ou localhost');
+                return;
+            }
+            
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            document.getElementById('micBtn').textContent = '🔇';
+            document.getElementById('micBtn').title = 'Desligar microfone';
+            
+            console.log('Microfone ativado, conectando com participantes...');
+            // Conectar com outros participantes
+            this.conectarComParticipantes();
+        } catch (error) {
+            console.error('Erro ao acessar microfone:', error);
+            alert('Erro ao acessar microfone. Verifique as permissões.');
+        }
+    }
+    
+    pararAudio() {
+        this.peerConnections.forEach(pc => pc.close());
+        this.peerConnections.clear();
+        
+        this.audioEnabled = false;
+        document.getElementById('audioBtn').textContent = '🔇';
+        document.getElementById('audioBtn').title = 'Ligar áudio';
+    }
+    
+    pararMicrofone() {
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+        
+        document.getElementById('micBtn').textContent = '🎤';
+        document.getElementById('micBtn').title = 'Ligar microfone';
+    }
+    
+    async conectarComParticipantes() {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            console.log('Entrando no canal de áudio...');
+            this.ws.send(JSON.stringify({
+                type: 'join_audio_channel',
+                sala_id: this.salaId,
+                user_id: this.userId,
+                has_microphone: !!this.localStream,
+                wants_to_listen: this.audioEnabled
+            }));
+        }
+    }
+    
+    async handleUserJoinedAudio(data) {
+        console.log('Usuário entrou no canal:', data.from_user);
+        
+        // Se ele tem microfone OU eu quero escutar, criar conexão
+        if (data.has_microphone || this.audioEnabled) {
+            if (!this.peerConnections.has(data.from_user)) {
+                await this.criarOfertaAudio(data.from_user);
+            }
+        }
+    }
+    
+    async criarOfertaAudio(targetUserId) {
+        try {
+            console.log('Criando oferta de áudio para:', targetUserId);
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            
+            this.peerConnections.set(targetUserId, pc);
+            
+            // Adicionar stream local se tenho microfone
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, this.localStream);
+                    console.log('Adicionando track de áudio para:', targetUserId);
+                });
+            }
+            
+            // Handler para receber áudio
+            pc.ontrack = (event) => {
+                console.log('Stream remoto recebido de:', targetUserId);
+                const audio = new Audio();
+                audio.srcObject = event.streams[0];
+                audio.autoplay = true;
+                audio.volume = 1.0;
+                audio.play().then(() => {
+                    console.log('Áudio reproduzindo de:', targetUserId);
+                }).catch(e => console.log('Erro ao reproduzir:', e));
+            };
+            
+            // Handler para ICE candidates
+            pc.onicecandidate = (event) => {
+                if (event.candidate && this.ws) {
+                    this.ws.send(JSON.stringify({
+                        type: 'ice_candidate',
+                        sala_id: this.salaId,
+                        to_user: targetUserId,
+                        candidate: event.candidate
+                    }));
+                }
+            };
+            
+            // Criar oferta
+            const offer = await pc.createOffer({ offerToReceiveAudio: true });
+            await pc.setLocalDescription(offer);
+            
+            console.log('Enviando oferta para:', targetUserId);
+            this.ws.send(JSON.stringify({
+                type: 'audio_offer',
+                sala_id: this.salaId,
+                to_user: targetUserId,
+                offer: offer
+            }));
+            
+        } catch (error) {
+            console.error('Erro ao criar oferta:', error);
+        }
+    }
+    
+    async handleAudioOffer(data) {
+        try {
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            
+            this.peerConnections.set(data.from_user, pc);
+            
+            pc.onicecandidate = (event) => {
+                if (event.candidate && this.ws) {
+                    this.ws.send(JSON.stringify({
+                        type: 'ice_candidate',
+                        sala_id: this.salaId,
+                        to_user: data.from_user,
+                        candidate: event.candidate
+                    }));
+                }
+            };
+            
+            pc.ontrack = (event) => {
+                const audio = new Audio();
+                audio.srcObject = event.streams[0];
+                audio.play();
+            };
+            
+            await pc.setRemoteDescription(data.offer);
+            
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, this.localStream);
+                });
+            }
+            
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            
+            if (this.ws) {
+                this.ws.send(JSON.stringify({
+                    type: 'audio_answer',
+                    sala_id: this.salaId,
+                    to_user: data.from_user,
+                    answer: answer
+                }));
+            }
+        } catch (error) {
+            console.error('Erro no audio offer:', error);
+        }
+    }
+    
+    async handleAudioAnswer(data) {
+        try {
+            const pc = this.peerConnections.get(data.from_user);
+            if (pc) {
+                await pc.setRemoteDescription(data.answer);
+            }
+        } catch (error) {
+            console.error('Erro no audio answer:', error);
+        }
+    }
+    
+    handleIceCandidate(data) {
+        try {
+            const pc = this.peerConnections.get(data.from_user);
+            if (pc) {
+                pc.addIceCandidate(data.candidate);
+            }
+        } catch (error) {
+            console.error('Erro no ice candidate:', error);
+        }
+    }
+    
     updateProgress() {
         if (!this.player) return;
         
@@ -832,6 +1104,18 @@ function seek(event) {
 
 function toggleFullscreen() {
     salaPlayer.toggleFullscreen();
+}
+
+async function toggleAudio() {
+    if (salaPlayer) {
+        salaPlayer.toggleAudio();
+    }
+}
+
+async function toggleMicrofone() {
+    if (salaPlayer) {
+        salaPlayer.toggleMicrofone();
+    }
 }
 
 async function enviarMensagem() {

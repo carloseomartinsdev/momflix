@@ -1,3 +1,11 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.html');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -61,6 +69,8 @@
                 <div class="chat-messages" id="chatMessages"></div>
                 
                 <div class="chat-input">
+                    <button id="audioBtn" class="audio-btn" onclick="toggleAudio()" title="Ligar áudio">🔇</button>
+                    <button id="micBtn" class="audio-btn" onclick="toggleMicrofone()" title="Ligar microfone">🎤</button>
                     <input type="text" id="messageInput" placeholder="Digite sua mensagem..." maxlength="500" onkeypress="handleEnter(event)">
                     <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
                     <button onclick="enviarMensagem()">Enviar</button>

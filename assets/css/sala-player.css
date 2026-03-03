@@ -304,6 +304,21 @@
     word-wrap: break-word;
 }
 
+.audio-btn {
+    background: #333;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.audio-btn:hover {
+    background: #555;
+}
+
 .chat-input {
     display: flex;
     padding: 15px;

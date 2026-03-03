@@ -2,6 +2,21 @@ console.log('Iniciando servidor WebSocket...');
 
 const WebSocket = require('ws');
 const mysql = require('mysql2/promise');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+// Carregar configuração SSL
+let sslConfig;
+try {
+    sslConfig = require('./websocket-ssl-config.js');
+} catch (error) {
+    console.log('Arquivo de configuração SSL não encontrado, usando configuração padrão');
+    sslConfig = {
+        key: path.join(__dirname, 'ssl', 'private.key'),
+        cert: path.join(__dirname, 'ssl', 'certificate.crt')
+    };
+}
 
 console.log('Módulos carregados com sucesso');
 
@@ -13,19 +28,56 @@ const dbConfig = {
     database: 'mom_flix'
 };
 
-const wss = new WebSocket.Server({ 
-    port: 8080,
-    host: '0.0.0.0',
-    perMessageDeflate: false,
-    clientTracking: true,
-    verifyClient: (info) => {
-        console.log(`Verificando cliente de: ${info.origin}`);
-        return true; // Aceitar todas as origens por enquanto
-    }
-});
-const salas = new Map(); // sala_id -> Set de conexões
+// Configuração SSL/HTTPS
+let server;
+let wss;
 
-console.log('Servidor WebSocket rodando na porta 8080, aceitando conexões externas');
+try {
+    // Tentar carregar certificados SSL
+    const sslOptions = {
+        key: fs.readFileSync(sslConfig.key),
+        cert: fs.readFileSync(sslConfig.cert)
+    };
+    
+    console.log(`Tentando carregar certificados:`);
+    console.log(`Key: ${sslConfig.key}`);
+    console.log(`Cert: ${sslConfig.cert}`);
+    
+    // Criar servidor HTTPS
+    server = https.createServer(sslOptions);
+    wss = new WebSocket.Server({ 
+        server,
+        perMessageDeflate: false,
+        clientTracking: true,
+        verifyClient: (info) => {
+            console.log(`Verificando cliente de: ${info.origin}`);
+            return true;
+        }
+    });
+    
+    server.listen(8080, '0.0.0.0', () => {
+        console.log('Servidor WebSocket SEGURO rodando na porta 8080 (WSS)');
+    });
+    
+} catch (error) {
+    console.log('Erro ao carregar certificados SSL:', error.message);
+    console.log('Usando HTTP simples como fallback');
+    
+    // Fallback para HTTP simples
+    wss = new WebSocket.Server({ 
+        port: 8081,
+        host: '0.0.0.0',
+        perMessageDeflate: false,
+        clientTracking: true,
+        verifyClient: (info) => {
+            console.log(`Verificando cliente de: ${info.origin}`);
+            return true;
+        }
+    });
+    
+    console.log('Servidor WebSocket HTTP rodando na porta 8081 (WS)');
+}
+const salas = new Map(); // sala_id -> Set de conexões
 
 // Ping interval para detectar conexões mortas
 const interval = setInterval(() => {
@@ -92,6 +144,18 @@ wss.on('connection', (ws, req) => {
                     break;
                 case 'chat_message':
                     await chatMessage(ws, data);
+                    break;
+                case 'audio_offer':
+                    await handleAudioOffer(ws, data);
+                    break;
+                case 'audio_answer':
+                    await handleAudioAnswer(ws, data);
+                    break;
+                case 'ice_candidate':
+                    await handleIceCandidate(ws, data);
+                    break;
+                case 'join_audio_channel':
+                    await handleJoinAudioChannel(ws, data);
                     break;
                 case 'leave_sala':
                     leaveSala(ws, data.sala_id);
@@ -374,5 +438,94 @@ function leaveSala(ws, sala_id) {
             salas.delete(sala_id);
             console.log(`Sala ${sala_id} removida (vazia)`);
         }
+    }
+}
+
+// Handlers WebRTC para chamadas de áudio
+async function handleJoinAudioChannel(ws, data) {
+    const { sala_id, user_id, has_microphone, wants_to_listen } = data;
+    console.log(`${user_id} entrando no canal - Mic: ${has_microphone}, Listen: ${wants_to_listen}`);
+    
+    // Adicionar ao canal
+    if (!salas.has(parseInt(sala_id))) {
+        salas.set(parseInt(sala_id), new Set());
+    }
+    salas.get(parseInt(sala_id)).add(ws);
+    ws.sala_id = sala_id;
+    ws.user_id = user_id;
+    
+    // Notificar todos no canal
+    const canal = salas.get(parseInt(sala_id));
+    canal.forEach(client => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+                type: 'user_joined_audio',
+                from_user: user_id,
+                has_microphone: has_microphone,
+                wants_to_listen: wants_to_listen
+            }));
+        }
+    });
+    
+    console.log(`Canal tem ${canal.size} participantes`);
+}
+
+async function handleAudioOffer(ws, data) {
+    const { sala_id, to_user, offer } = data;
+    console.log(`Oferta de áudio na sala ${sala_id} para usuário ${to_user}`);
+    
+    const salaConnections = salas.get(parseInt(sala_id));
+    if (salaConnections) {
+        salaConnections.forEach(client => {
+            if (client.user_id == to_user && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'audio_offer',
+                    data: {
+                        from_user: ws.user_id,
+                        offer: offer
+                    }
+                }));
+            }
+        });
+    }
+}
+
+async function handleAudioAnswer(ws, data) {
+    const { sala_id, to_user, answer } = data;
+    console.log(`Resposta de áudio na sala ${sala_id} para usuário ${to_user}`);
+    
+    const salaConnections = salas.get(parseInt(sala_id));
+    if (salaConnections) {
+        salaConnections.forEach(client => {
+            if (client.user_id == to_user && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'audio_answer',
+                    data: {
+                        from_user: ws.user_id,
+                        answer: answer
+                    }
+                }));
+            }
+        });
+    }
+}
+
+async function handleIceCandidate(ws, data) {
+    const { sala_id, to_user, candidate } = data;
+    console.log(`ICE candidate na sala ${sala_id} para usuário ${to_user}`);
+    
+    const salaConnections = salas.get(parseInt(sala_id));
+    if (salaConnections) {
+        salaConnections.forEach(client => {
+            if (client.user_id == to_user && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'ice_candidate',
+                    data: {
+                        from_user: ws.user_id,
+                        candidate: candidate
+                    }
+                }));
+            }
+        });
     }
 }

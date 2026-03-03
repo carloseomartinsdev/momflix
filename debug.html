@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Áudio</title>
+</head>
+<body>
+    <h1>Teste WebSocket Áudio</h1>
+    <button onclick="conectar()">Conectar</button>
+    <button onclick="testarAudio()">Testar Áudio</button>
+    <div id="status"></div>
+
+    <script>
+        let ws;
+        
+        function conectar() {
+            ws = new WebSocket('wss://momflix.momsys.com.br:8080');
+            
+            ws.onopen = () => {
+                document.getElementById('status').innerHTML = 'Conectado!';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                document.getElementById('status').innerHTML += '<br>Recebido: ' + data.type;
+            };
+        }
+        
+        function testarAudio() {
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'audio_request',
+                    sala_id: 1,
+                    user_id: 123
+                }));
+            }
+        }
+    </script>
+</body>
+</html>
