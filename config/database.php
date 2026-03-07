@@ -3,7 +3,7 @@
 define('DB_HOST', 'mysql832.umbler.com:41890');
 define('DB_NAME', 'momflix');
 define('DB_USER', 'momflix');
-define('DB_PASS', 'momflix');
+define('DB_PASS', '89XyllYVt_Ki#');
 define('DB_CHARSET', 'utf8mb4');
 
 try {
