@@ -215,6 +215,10 @@ def main():
     
     cursor = conn.cursor(dictionary=True)
     
+    # Define pasta de capas no public
+    CAPAS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'public', 'capas')
+    os.makedirs(CAPAS_DIR, exist_ok=True)
+    
     # Busca todos os títulos
     cursor.execute("SELECT id, nome, pasta_titulo, is_saga FROM titulos")
     titulos = cursor.fetchall()
@@ -223,62 +227,63 @@ def main():
     
     for titulo in titulos:
         nome = titulo["nome"]
-        pasta = titulo["pasta_titulo"]
+        titulo_id = titulo["id"]
         
-        # Verifica se já existe capa
-        capa_existente = False
-        for ext in ['.jpg', '.jpeg', '.png', '.webp']:
-            if os.path.exists(os.path.join(pasta, f"capa{ext}")):
-                capa_existente = True
-                break
+        # Caminho da capa usando ID do título
+        capa_path = os.path.join(CAPAS_DIR, f"{titulo_id}.jpg")
         
-        if capa_existente:
+        if os.path.exists(capa_path):
             print(f"✓ {nome} - já tem capa")
         else:
             print(f"🖼️ Baixando capa para: {nome}")
             
-            ok = baixar_capa(nome, pasta)
-
-            if not ok and '-' in nome:
-                nome_base = nome.split('-')[0].strip()
-                if nome_base and nome_base != nome:
-                    print(f"  🔁 Tentando novamente com título simplificado: {nome_base}")
-                    ok = baixar_capa(nome_base, pasta)
-
+            ok = baixar_capa(nome, CAPAS_DIR)
+            
             if ok:
-                print(f"✅ {nome} - capa salva")
+                # Renomeia para ID do título
+                temp_capa = os.path.join(CAPAS_DIR, "capa.jpg")
+                if os.path.exists(temp_capa):
+                    os.rename(temp_capa, capa_path)
+                    print(f"✅ {nome} - capa salva como {titulo_id}.jpg")
             else:
-                print(f"❌ {nome} - erro ao baixar capa")
+                if '-' in nome:
+                    nome_base = nome.split('-')[0].strip()
+                    if nome_base and nome_base != nome:
+                        print(f"  🔁 Tentando novamente com título simplificado: {nome_base}")
+                        ok = baixar_capa(nome_base, CAPAS_DIR)
+                        if ok:
+                            temp_capa = os.path.join(CAPAS_DIR, "capa.jpg")
+                            if os.path.exists(temp_capa):
+                                os.rename(temp_capa, capa_path)
+                                print(f"✅ {nome} - capa salva como {titulo_id}.jpg")
+                
+                if not ok:
+                    print(f"❌ {nome} - erro ao baixar capa")
         
         # Se for uma saga, processar filmes individuais
         if titulo["is_saga"]:
             print(f"  📁 Processando filmes da saga: {nome}")
-            query = "SELECT id, nome, path FROM filmes_saga WHERE saga_id = %s"
-            print(f"  DEBUG: Query = {query}, Param = {titulo['id']}")
-            cursor.execute(query, (titulo["id"],))
+            cursor.execute("SELECT id, nome, path FROM filmes_saga WHERE saga_id = %s", (titulo_id,))
             filmes = cursor.fetchall()
             
             for filme in filmes:
                 nome_filme = filme["nome"]
-                if filme["path"]:
-                    pasta_filme = os.path.dirname(filme["path"])
+                filme_id = filme["id"]
+                capa_filme_path = os.path.join(CAPAS_DIR, f"saga_{titulo_id}_{filme_id}.jpg")
+                
+                if os.path.exists(capa_filme_path):
+                    print(f"    ✓ {nome_filme} - já tem capa")
+                else:
+                    print(f"    🖼️ Baixando capa para filme da saga: {nome_filme}")
+                    ok_filme = baixar_capa(nome_filme, CAPAS_DIR)
                     
-                    capa_filme_existe = False
-                    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
-                        if os.path.exists(os.path.join(pasta_filme, f"capa{ext}")):
-                            capa_filme_existe = True
-                            break
-                    
-                    if capa_filme_existe:
-                        print(f"    ✓ {nome_filme} - já tem capa")
-                    else:
-                        print(f"    🖼️ Baixando capa para filme da saga: {nome_filme}")
-                        ok_filme = baixar_capa(nome_filme, pasta_filme)
-                        
-                        if ok_filme:
+                    if ok_filme:
+                        temp_capa = os.path.join(CAPAS_DIR, "capa.jpg")
+                        if os.path.exists(temp_capa):
+                            os.rename(temp_capa, capa_filme_path)
                             print(f"    ✅ {nome_filme} - capa salva")
-                        else:
-                            print(f"    ❌ {nome_filme} - erro ao baixar capa")
+                    else:
+                        print(f"    ❌ {nome_filme} - erro ao baixar capa")
     
     cursor.close()
     conn.close()

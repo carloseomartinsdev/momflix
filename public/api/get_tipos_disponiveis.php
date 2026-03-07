@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once '../config/database.php';
-require_once '../config/bloqueios_helper.php';
+require_once '../../config/database.php';
+require_once '../../config/bloqueios_helper.php';
 
 header('Content-Type: application/json');
 
