@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../config/database.php';
+require_once '../../config/database.php';
 
 if (!isset($_SESSION['user_id']) || !$_SESSION['is_admin']) {
     http_response_code(401);

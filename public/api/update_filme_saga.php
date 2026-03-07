@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['is_admin']) {
     exit;
 }
 
-require_once '../config/database.php';
+require_once '../../config/database.php';
 
 $filmeId = $_POST['filme_id'] ?? null;
 if (!$filmeId) {

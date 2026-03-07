@@ -20,7 +20,7 @@ if (!$sala_id) {
     exit;
 }
 
-require_once '../config/database.php';
+require_once '../../config/database.php';
 
 // Verificar se usuário está na sala
 $stmt = $pdo->prepare("SELECT 1 FROM sala_participantes WHERE sala_id = ? AND usuario_id = ? AND ativo = 1");

@@ -3,8 +3,8 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 session_start();
-require_once '../config/database.php';
-require_once '../config/bloqueios_helper.php';
+require_once '../../config/database.php';
+require_once '../../config/bloqueios_helper.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['success' => false, 'error' => 'Não autenticado']);
