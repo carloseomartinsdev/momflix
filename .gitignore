@@ -1,5 +1,4 @@
 # Arquivos de configuração sensíveis
-config/database.php
 *.env
 .env*
 

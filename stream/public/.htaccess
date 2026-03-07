@@ -1,0 +1,6 @@
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, OPTIONS"
+Header set Access-Control-Allow-Headers "Range"
+
+php_value max_execution_time 0
+php_value memory_limit 256M
