@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Player</title>
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/player.css">
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+</head>
+<body>
+    <div class="player-container">
+        <div class="player-header" id="playerHeader">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="player-back" onclick="fecharPlayer()">✕</button>
+                <h3 class="player-title" id="playerTitle">Carregando...</h3>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btnAutoPulo" class="player-btn" onclick="toggleAutoPulo()" title="Auto Pulo">⏭️</button>
+                <button id="btnConfig" class="player-btn" onclick="toggleConfigTimes()" title="Configurar Tempos" style="display:none">⚙️</button>
+                <button id="btnEpisodios" class="player-btn" onclick="mostrarEpisodios()" style="display:none">📝 Lista</button>
+            </div>
+        </div>
+        
+        <video id="playerVideo" class="video-js vjs-default-skin" preload="auto"></video>
+        
+        <div class="custom-controls" id="customControls">
+            <button class="control-btn" id="playBtn" onclick="togglePlay()">▶</button>
+            <button class="control-btn" id="nextBtn" onclick="proximoEpisodio()" style="display:none">⏭</button>
+            <div class="progress-container" onclick="seek(event)" onmousemove="showSpritePreview(event)" onmouseleave="hideSpritePreview()">
+                <div class="progress-bar" id="progressBar"></div>
+                <div class="sprite-preview" id="spritePreview">
+                    <div class="sprite-time" id="spriteTime">0:00</div>
+                </div>
+            </div>
+            <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+            <button class="control-btn" id="volumeBtn" onclick="toggleMute()">🔊</button>
+            <input type="range" id="volumeSlider" min="0" max="100" value="100" onchange="changeVolume()">
+            <button class="control-btn" id="episodiosBtn" onclick="toggleEpisodios()" style="display:none">☰</button>
+            <select class="speed-select" id="speedSelect" onchange="changeSpeed()">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+            <button class="control-btn" onclick="toggleFullscreen()">⛶</button>
+        </div>
+    </div>
+    
+    <div class="episodes-modal" id="episodesModal">
+        <div class="episodes-list">
+            <div class="episodes-header">
+                <h3 id="serieTitle">Episódios</h3>
+                <button class="control-btn" onclick="fecharListaEpisodios()">&times;</button>
+            </div>
+            <div id="episodesList"></div>
+        </div>
+    </div>
+    
+    <script src="assets/js/player/controls.js"></script>
+    <script src="assets/js/player/episodes.js"></script>
+    <script src="assets/js/player/thumbnail.js"></script>
+    <script src="assets/js/player/skip.js"></script>
+    <script src="assets/js/player/core.js"></script>
+    <script>
+        // Funções globais para inline events
+        function showSpritePreview(event) {
+            if (!PlayerControls.spriteLoaded || !PlayerControls.player) return;
+            
+            const container = event.currentTarget;
+            const rect = container.getBoundingClientRect();
+            const percent = (event.clientX - rect.left) / rect.width;
+            const duration = PlayerControls.player.duration();
+            const time = duration * percent;
+            
+            const frameIndex = Math.floor(percent * 100);
+            const row = Math.floor(frameIndex / 10);
+            const col = frameIndex % 10;
+            
+            const preview = document.getElementById('spritePreview');
+            preview.style.left = event.clientX - rect.left + 'px';
+            preview.style.backgroundPosition = `-${col * 160}px -${row * 90}px`;
+            preview.style.display = 'block';
+            
+            const min = Math.floor(time / 60);
+            const sec = Math.floor(time % 60);
+            document.getElementById('spriteTime').textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+        }
+        
+        function hideSpritePreview() {
+            document.getElementById('spritePreview').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
+    
+    <div class="skip-intro-btn" id="skipIntroBtn" onclick="pularAbertura()">
+        Pular Abertura
+    </div>
+    
+    <div class="config-times-modal" id="configTimesModal">
+        <h3>Configurar Tempos</h3>
+        <div>
+            <label>Início da Abertura (segundos):</label>
+            <div class="time-setter">
+                <input type="number" id="introStartInput" class="config-input" placeholder="Ex: 30" min="0">
+                <button onclick="setCurrentTimeAsIntroStart()">Tempo Atual</button>
+            </div>
+        </div>
+        <div>
+            <label>Fim da Abertura (segundos):</label>
+            <div class="time-setter">
+                <input type="number" id="introEndInput" class="config-input" placeholder="Ex: 90" min="0">
+                <button onclick="setCurrentTimeAsIntroEnd()">Tempo Atual</button>
+            </div>
+        </div>
+        <div>
+            <label>Fim do Conteúdo (segundos):</label>
+            <div class="time-setter">
+                <input type="number" id="contentEndInput" class="config-input" placeholder="Ex: 2400" min="0">
+                <button onclick="setCurrentTimeAsContentEnd()">Tempo Atual</button>
+            </div>
+        </div>
+        <div id="configMessage" style="margin: 10px 0; padding: 8px; border-radius: 4px; display: none;"></div>
+        <div class="config-buttons">
+            <button class="config-btn save" onclick="saveContentTimes()">Salvar</button>
+            <button class="config-btn cancel" onclick="closeConfigTimes()">Cancelar</button>
+        </div>
+    </div>
+
+    
+    <div class="next-episode-btn" id="nextEpisodeBtn" onclick="irProximoEpisodio()">
+        ▶ Próximo Episódio
+    </div>
