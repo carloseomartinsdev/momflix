@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once 'config/database.php';
+require_once '../config/database.php';
 $stmt = $pdo->prepare("SELECT username, profile_icon FROM usuarios WHERE id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
