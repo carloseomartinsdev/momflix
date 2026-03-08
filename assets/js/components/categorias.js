@@ -44,7 +44,12 @@ const Categorias = {
     async criarSagasComRolo() {
         const result = await API.getCatalogo();
         if (result.success && result.data) {
-            const sagasComRolo = result.data.filter(t => (t.is_saga === true || t.is_saga === 1) && t.rolo && t.rolo.trim() !== '');
+            const sagasComRolo = result.data.filter(t => 
+                (t.is_saga === true || t.is_saga === 1 || t.is_saga === '1') && 
+                t.rolo && 
+                t.rolo.trim() !== '' && 
+                t.rolo.toLowerCase() !== 'não'
+            );
             
             for (const saga of sagasComRolo) {
                 const filmesSaga = await API.getFilmesSaga(saga.id);

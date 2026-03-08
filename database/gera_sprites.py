@@ -83,14 +83,14 @@ def main():
         })
     
     # Filmes de saga
-    cursor.execute("SELECT f.id, t.nome, f.nome as filme_nome, f.path, t.pasta_titulo FROM filmes_saga f JOIN titulos t ON f.saga_id = t.id")
+    cursor.execute("SELECT f.id, t.nome, f.nome as filme_nome, f.path, f.pasta_filme FROM filmes_saga f JOIN titulos t ON f.saga_id = t.id")
     for row in cursor.fetchall():
         videos.append({
             'tipo': 'saga',
             'id': row['id'],
             'nome': f"{row['nome']} - {row['filme_nome']}",
             'path': row['path'],
-            'pasta': row['pasta_titulo']
+            'pasta': row['pasta_filme']
         })
     
     cursor.close()
