@@ -206,7 +206,7 @@ const Modal = {
                         const params = new URLSearchParams({
                             path: ep.path,
                             title: ep.tag,
-                            idTitulo: titulo.id,
+                            idTitulo: ep.id,
                             isSerie: '1'
                         });
                         iframe.src = `player.html?${params.toString()}`;
