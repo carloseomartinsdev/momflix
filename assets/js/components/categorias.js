@@ -188,6 +188,10 @@ const Categorias = {
     criarCategoria(titulo, titulos, restantes = [], isContinueWatching = false, isSagaFilmes = false, isTopList = false) {
         const container = document.getElementById('categorias');
         
+        // Evitar duplicação
+        const existente = Array.from(container.querySelectorAll('.categoria-titulo')).find(el => el.textContent.trim() === titulo);
+        if (existente) return;
+        
         const categoria = document.createElement('div');
         categoria.className = 'categoria';
         
