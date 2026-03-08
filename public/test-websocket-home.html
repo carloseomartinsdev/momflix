@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste WebSocket Home - MomFlix</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #141414; 
+            color: #fff; 
+            padding: 20px; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; color: #e50914; }
+        .section { 
+            background: #222; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 8px; 
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+        }
+        .status.connected { background: #0f5132; }
+        .status.disconnected { background: #842029; }
+        .controls { margin: 20px 0; }
+        button { 
+            background: #e50914; 
+            color: #fff; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-right: 10px; 
+        }
+        button:hover { background: #f40612; }
+        input { 
+            padding: 8px; 
+            border-radius: 4px; 
+            border: 1px solid #444; 
+            background: #333; 
+            color: #fff; 
+            margin-right: 10px; 
+            width: 300px;
+        }
+        label { display: block; margin: 10px 0 5px; }
+        .log { 
+            background: #000; 
+            padding: 15px; 
+            border-radius: 4px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            font-family: monospace; 
+            font-size: 12px; 
+        }
+        .log-entry { 
+            padding: 5px 0; 
+            border-bottom: 1px solid #333; 
+        }
+        .log-entry.info { color: #4CAF50; }
+        .log-entry.chat { color: #2196F3; }
+        .log-entry.player { color: #FF9800; }
+        .log-entry.error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste WebSocket Home Server</h1>
+        
+        <div class="section">
+            <h2>Status da Conexão</h2>
+            <div id="status" class="status disconnected">Desconectado</div>
+        </div>
+
+        <div class="section">
+            <h2>Configuração</h2>
+            <div class="controls">
+                <label>URL do WebSocket Server (Home):</label>
+                <input type="text" id="wsUrl" value="wss://localhost:8080" placeholder="wss://seu-ip:8080">
+                
+                <label>ID da Sala:</label>
+                <input type="number" id="salaId" value="1" min="1">
+                
+                <label>Username:</label>
+                <input type="text" id="username" value="Teste">
+                
+                <br><br>
+                <button onclick="conectar()">Conectar</button>
+                <button onclick="desconectar()">Desconectar</button>
+                <button onclick="limparLog()">Limpar Log</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Testar Envio</h2>
+            <div class="controls">
+                <button onclick="enviarChat()">Enviar Chat</button>
+                <button onclick="enviarPlayer()">Enviar Player State</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Log de Eventos</h2>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/websocket-client.js"></script>
+    <script>
+        let ws = null;
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function conectar() {
+            const wsUrl = document.getElementById('wsUrl').value;
+            const salaId = document.getElementById('salaId').value;
+            const username = document.getElementById('username').value;
+
+            if (!wsUrl || !salaId || !username) {
+                addLog('Preencha todos os campos', 'error');
+                return;
+            }
+
+            addLog(`Conectando a ${wsUrl}...`, 'info');
+            
+            ws = new SalaWebSocket(wsUrl);
+            
+            ws.on('onopen', () => {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = `Conectado - Sala ${salaId}`;
+                addLog('Conectado com sucesso!', 'info');
+            });
+
+            ws.on('onclose', () => {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = 'Desconectado';
+                addLog('Desconectado', 'info');
+            });
+
+            ws.on('onerror', (error) => {
+                addLog('Erro na conexão', 'error');
+            });
+
+            ws.on('user_joined', (data) => {
+                addLog(`${data.username} entrou na sala`, 'info');
+            });
+
+            ws.on('user_left', (data) => {
+                addLog(`${data.username} saiu da sala`, 'info');
+            });
+
+            ws.on('chat', (data) => {
+                addLog(`[${data.username}] ${data.mensagem}`, 'chat');
+            });
+
+            ws.on('player_state', (data) => {
+                addLog(`Player: tempo=${data.tempo_atual}s, pausado=${data.pausado}`, 'player');
+            });
+
+            ws.connect(salaId, 1, username);
+        }
+
+        function desconectar() {
+            if (ws) {
+                ws.disconnect();
+                ws = null;
+            }
+        }
+
+        function enviarChat() {
+            if (!ws) {
+                addLog('Não conectado', 'error');
+                return;
+            }
+            ws.sendChat('Mensagem de teste!');
+            addLog('Chat enviado', 'info');
+        }
+
+        function enviarPlayer() {
+            if (!ws) {
+                addLog('Não conectado', 'error');
+                return;
+            }
+            ws.sendPlayerState(120.5, false);
+            addLog('Player state enviado', 'info');
+        }
+
+        function limparLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
