@@ -19,7 +19,7 @@ const Modal = {
         
         // Header com banner triplo
         const header = document.getElementById('modalTituloHeader');
-        const imgUrl = titulo.capa ? `image.php?path=${encodeURIComponent(titulo.capa)}` : '';
+        const imgUrl = `image.php?id=${titulo.id}`;
         
         header.innerHTML = `
             <span class="modal-close" onclick="fecharModal()">&times;</span>
@@ -249,7 +249,7 @@ const Modal = {
                 
                 if (filme.capa) {
                     const img = document.createElement('img');
-                    img.src = `image.php?path=${encodeURIComponent(filme.capa)}`;
+                    img.src = `image.php?id=${filme.id}`;
                     img.style.cssText = 'width: 80px; height: 120px; object-fit: cover; border-radius: 4px;';
                     filmeItem.appendChild(img);
                 }
