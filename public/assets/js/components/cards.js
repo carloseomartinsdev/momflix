@@ -72,13 +72,9 @@ const Cards = {
         
         // Imagem
         const img = document.createElement('img');
-        if (titulo.capa) {
-            img.src = `image.php?path=${encodeURIComponent(titulo.capa)}`;
-            img.alt = titulo.nome;
-            img.onerror = () => this.criarFallback(card, img);
-        } else {
-            this.criarFallback(card, img);
-        }
+        img.src = `image.php?id=${titulo.id}`;
+        img.alt = titulo.nome;
+        img.onerror = () => this.criarFallback(card, img);
         card.appendChild(img);
         
         // Título
@@ -124,13 +120,9 @@ const Cards = {
         
         // Imagem
         const img = document.createElement('img');
-        if (titulo.capa) {
-            img.src = `image.php?path=${encodeURIComponent(titulo.capa)}`;
-            img.alt = titulo.nome;
-            img.onerror = () => this.criarFallback(card, img);
-        } else {
-            this.criarFallback(card, img);
-        }
+        img.src = `image.php?id=${titulo.id}`;
+        img.alt = titulo.nome;
+        img.onerror = () => this.criarFallback(card, img);
         card.appendChild(img);
         
         // Título
