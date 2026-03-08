@@ -32,10 +32,17 @@ def main():
     
     for row in filmes:
         id_titulo = row['id']
-        pasta = row['pasta_titulo']
+        pasta = row['pasta_titulo'].replace('Midias', 'Mideas') if row['pasta_titulo'] else None
         nome = row['nome']
         
-        if not pasta or not os.path.isdir(pasta):
+        print(f"Processando {id_titulo}: {pasta}")
+        
+        if not pasta:
+            print(f"  ❌ Pasta vazia")
+            continue
+            
+        if not os.path.isdir(pasta):
+            print(f"  ❌ Pasta não existe ou não é diretório")
             continue
         
         # Copiar capa
@@ -74,7 +81,7 @@ def main():
     cursor.execute("SELECT e.id, t.pasta_titulo FROM episodios e JOIN titulos t ON e.titulo_id = t.id")
     for row in cursor.fetchall():
         id_episodio = row['id']
-        pasta = row['pasta_titulo']
+        pasta = row['pasta_titulo'].replace('Midias', 'Mideas') if row['pasta_titulo'] else None
         
         if not pasta or not os.path.isdir(pasta):
             continue
@@ -95,7 +102,7 @@ def main():
     cursor.execute("SELECT f.id, t.pasta_titulo FROM filmes_saga f JOIN titulos t ON f.saga_id = t.id")
     for row in cursor.fetchall():
         id_filme = row['id']
-        pasta = row['pasta_titulo']
+        pasta = row['pasta_titulo'].replace('Midias', 'Mideas') if row['pasta_titulo'] else None
         
         if not pasta or not os.path.isdir(pasta):
             continue
@@ -116,7 +123,7 @@ def main():
     cursor.execute("SELECT id, pasta_titulo FROM titulos WHERE (tipo != 'filme' OR is_saga = 1 OR path IS NULL)")
     for row in cursor.fetchall():
         id_titulo = row['id']
-        pasta = row['pasta_titulo']
+        pasta = row['pasta_titulo'].replace('Midias', 'Mideas') if row['pasta_titulo'] else None
         
         if not pasta or not os.path.isdir(pasta):
             continue
