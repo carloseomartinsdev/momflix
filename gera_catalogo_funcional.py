@@ -10,17 +10,18 @@ import sys
 
 # CONFIGURAÇÃO DO BANCO DE DADOS
 DB_CONFIG = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '',
-    'database': 'mom_flix'
+    'host': 'mysql832.umbler.com',
+    'port': 41890,
+    'user': 'momflix',
+    'password': '89XyllYVt_Ki#',
+    'database': 'momflix'
 }
 
 UNIDADES = {
-    r"E:\Midias": "HD E:",
-    r"F:\Midias": "HD F:",
-    r"G:\Midias": "HD G:",
-    r"H:\Midias": "HD H:",
+    r"E:\Mideas": "HD E:",
+    r"F:\Mideas": "HD F:",
+    r"G:\Mideas": "HD G:",
+    r"H:\Mideas": "HD H:",
 }
 
 TIPOS = {
@@ -490,7 +491,7 @@ def atualizar_banco_dados(itens, tipos_selecionados, forcar_reset=False):
             resetar_status_arquivos(tipos_selecionados)
             # Limpa apenas dados relacionados, preservando títulos e histórico
             placeholders = ','.join(['%s'] * len(tipos_selecionados))
-            cursor.execute(f"DELETE FROM episodios WHERE titulo_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders}))", tipos_selecionados)
+            placeholders = ','.join(['%s'] * len(tipos_selecionados)); cursor.execute(f"DELETE FROM salas WHERE episodio_id IN (SELECT id FROM episodios WHERE titulo_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders})))", tipos_selecionados); cursor.execute(f"DELETE FROM episodios WHERE titulo_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders}))", tipos_selecionados)
             cursor.execute(f"DELETE FROM filmes_saga WHERE saga_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders}))", tipos_selecionados)
             cursor.execute(f"DELETE FROM titulo_genero WHERE titulo_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders}))", tipos_selecionados)
             itens_para_atualizar = itens
@@ -521,7 +522,7 @@ def atualizar_banco_dados(itens, tipos_selecionados, forcar_reset=False):
             ids_para_remover = [item['idTitulo'] for item in itens_para_atualizar]
             if ids_para_remover:
                 placeholders = ','.join(['%s'] * len(ids_para_remover))
-                cursor.execute(f"DELETE FROM episodios WHERE titulo_id IN ({placeholders})", ids_para_remover)
+                placeholders = ','.join(['%s'] * len(tipos_selecionados)); cursor.execute(f"DELETE FROM salas WHERE episodio_id IN (SELECT id FROM episodios WHERE titulo_id IN (SELECT id FROM titulos WHERE tipo IN ({placeholders})))", tipos_selecionados); cursor.execute(f"DELETE FROM episodios WHERE titulo_id IN ({placeholders})", ids_para_remover)
                 cursor.execute(f"DELETE FROM filmes_saga WHERE saga_id IN ({placeholders})", ids_para_remover)
                 cursor.execute(f"DELETE FROM titulo_genero WHERE titulo_id IN ({placeholders})", ids_para_remover)
                 print(f"Limpeza de dados de {len(ids_para_remover)} títulos (histórico preservado)")
