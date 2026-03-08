@@ -33,8 +33,8 @@ if (isset($_GET['id'])) {
         exit;
     }
 } elseif (isset($_GET['path'])) {
-    // Usar path diretamente (compatibilidade)
-    $path = $_GET['path'];
+    // Usar path diretamente (compatibilidade) - ajustar Midias para Mideas
+    $path = str_replace('Midias', 'Mideas', $_GET['path']);
 }
 
 if ($path && file_exists($path)) {
