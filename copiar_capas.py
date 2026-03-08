@@ -99,25 +99,45 @@ def main():
                 print(f"❌ Episódio {id_episodio}: Erro ao copiar sprite - {e}")
     
     # Processar filmes de saga
-    cursor.execute("SELECT f.id, t.pasta_titulo FROM filmes_saga f JOIN titulos t ON f.saga_id = t.id")
-    for row in cursor.fetchall():
+    cursor.execute("SELECT f.id, f.pasta_filme FROM filmes_saga f WHERE f.pasta_filme IS NOT NULL")
+    filmes_saga = cursor.fetchall()
+    print(f"\n🎬 Processando {len(filmes_saga)} filmes de saga...")
+    
+    for row in filmes_saga:
         id_filme = row['id']
-        pasta = row['pasta_titulo'].replace('Midias', 'Mideas') if row['pasta_titulo'] else None
+        pasta = row['pasta_filme'].replace('Midias', 'Mideas') if row['pasta_filme'] else None
         
         if not pasta or not os.path.isdir(pasta):
             continue
         
-        # Copiar sprite do filme de saga - busca qualquer sprite_*.jpg
+        # Copiar capa
+        capa_origem = None
+        for nome in ['capa.jpg', 'capa.jpeg', 'capa.png', 'capa.webp']:
+            path = os.path.join(pasta, nome)
+            if os.path.exists(path):
+                capa_origem = path
+                break
+        
+        if capa_origem:
+            capa_destino = capas_dir / f"{id_filme}.jpg"
+            try:
+                shutil.copy2(capa_origem, capa_destino)
+                print(f"✅ Filme saga {id_filme}: Capa copiada")
+                copiados += 1
+            except Exception as e:
+                print(f"❌ Filme saga {id_filme}: Erro ao copiar capa - {e}")
+        
+        # Copiar sprite
         sprites_na_pasta = [f for f in os.listdir(pasta) if f.startswith('sprite_') and f.endswith('.jpg')]
         if sprites_na_pasta:
             sprite_origem = os.path.join(pasta, sprites_na_pasta[0])
             sprite_destino = sprites_dir / f"sprite_{id_filme}.jpg"
             try:
                 shutil.copy2(sprite_origem, sprite_destino)
-                print(f"✅ Saga {id_filme}: Sprite copiado")
+                print(f"✅ Filme saga {id_filme}: Sprite copiado")
                 sprites_copiados += 1
             except Exception as e:
-                print(f"❌ Saga {id_filme}: Erro ao copiar sprite - {e}")
+                print(f"❌ Filme saga {id_filme}: Erro ao copiar sprite - {e}")
     
     # Processar títulos restantes (séries, etc) para capas
     cursor.execute("SELECT id, pasta_titulo FROM titulos WHERE (tipo != 'filme' OR is_saga = 1 OR path IS NULL)")

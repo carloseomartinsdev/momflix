@@ -188,6 +188,8 @@ const Modal = {
                     
                     epItem.appendChild(epInfo);
                     epItem.onclick = () => {
+                        console.log('Episódio clicado - ID:', ep.id, 'Path:', ep.path);
+                        
                         // Salvar dados da série no sessionStorage
                         const serieData = {
                             titulo: titulo.nome,
@@ -209,6 +211,7 @@ const Modal = {
                             idTitulo: ep.id,
                             isSerie: '1'
                         });
+                        console.log('URL do player:', `player.html?${params.toString()}`);
                         iframe.src = `player.html?${params.toString()}`;
                         modal.style.display = 'flex';
                     };
