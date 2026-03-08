@@ -46,7 +46,9 @@ const Modal = {
         const actionsContainer = document.getElementById('modalActions');
         actionsContainer.innerHTML = '';
         
-        if (titulo.tipo === 'filme' && titulo.path && !titulo.is_saga) {
+        console.log('Título:', titulo.tipo, 'Path:', titulo.path, 'Is Saga:', titulo.is_saga);
+        
+        if (titulo.tipo === 'filme' && !titulo.is_saga) {
             const btnPlay = document.createElement('button');
             btnPlay.className = 'btn-play';
             btnPlay.innerHTML = '▶ Assistir';
