@@ -68,7 +68,7 @@ const PlayerCore = {
         });
         
         this.player.src({
-            src: 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo),
+            src: params.idTitulo ? 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) : '../video.php?path=' + encodeURIComponent(params.path),
             type: 'video/mp4'
         });
         
