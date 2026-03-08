@@ -44,10 +44,18 @@ const Categorias = {
     async criarSagasComRolo() {
         const result = await API.getCatalogo();
         if (result.success && result.data) {
-            const sagasComRolo = result.data.filter(t => (t.is_saga === true || t.is_saga === 1) && t.rolo && t.rolo.trim() !== '');
+            const sagasComRolo = result.data.filter(t => 
+                (t.is_saga === true || t.is_saga === 1 || t.is_saga === '1') && 
+                t.rolo && 
+                t.rolo.trim() !== '' && 
+                t.rolo.toLowerCase() !== 'não'
+            );
+            
+            console.log('Sagas com rolo encontradas:', sagasComRolo);
             
             for (const saga of sagasComRolo) {
                 const filmesSaga = await API.getFilmesSaga(saga.id);
+                console.log(`Filmes da saga ${saga.rolo}:`, filmesSaga);
                 if (filmesSaga.success && filmesSaga.data && filmesSaga.data.length > 0) {
                     this.criarCategoria(saga.rolo, filmesSaga.data, [], false, true);
                 }
@@ -182,6 +190,10 @@ const Categorias = {
 
     criarCategoria(titulo, titulos, restantes = [], isContinueWatching = false, isSagaFilmes = false, isTopList = false) {
         const container = document.getElementById('categorias');
+        
+        // Evitar duplicação
+        const existente = Array.from(container.querySelectorAll('.categoria-titulo')).find(el => el.textContent.trim() === titulo);
+        if (existente) return;
         
         const categoria = document.createElement('div');
         categoria.className = 'categoria';
