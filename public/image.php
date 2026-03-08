@@ -1,20 +1,13 @@
 <?php
-if (isset($_GET['path']) && file_exists($_GET['path'])) {
-    $path = $_GET['path'];
-    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $path = __DIR__ . '/capas/' . $id . '.jpg';
     
-    $mimeTypes = [
-        'jpg' => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-        'gif' => 'image/gif',
-        'bmp' => 'image/bmp',
-        'webp' => 'image/webp'
-    ];
-    
-    if (isset($mimeTypes[$ext])) {
-        header('Content-Type: ' . $mimeTypes[$ext]);
+    if (file_exists($path)) {
+        header('Content-Type: image/jpeg');
         readfile($path);
+    } else {
+        http_response_code(404);
     }
 } else {
     http_response_code(404);
