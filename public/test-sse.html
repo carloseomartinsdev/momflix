@@ -105,8 +105,7 @@
 
         function conectar() {
             if (eventSource) {
-                addLog('Já existe uma conexão ativa', 'error');
-                return;
+                desconectar();
             }
 
             const salaId = document.getElementById('salaId').value;
@@ -116,38 +115,49 @@
             }
 
             addLog(`Conectando à sala ${salaId}...`, 'info');
-            eventSource = new EventSource(`api/sse_sala.php?sala_id=${salaId}`);
+            
+            try {
+                eventSource = new EventSource(`api/sse_sala.php?sala_id=${salaId}`);
 
-            eventSource.onopen = () => {
-                document.getElementById('status').className = 'status connected';
-                document.getElementById('status').textContent = `Conectado à sala ${salaId}`;
-                addLog('Conexão estabelecida!', 'info');
-            };
+                eventSource.onopen = () => {
+                    document.getElementById('status').className = 'status connected';
+                    document.getElementById('status').textContent = `Conectado à sala ${salaId}`;
+                    addLog('Conexão estabelecida!', 'info');
+                };
 
-            eventSource.addEventListener('connected', (e) => {
-                const data = JSON.parse(e.data);
-                addLog(`Conectado à sala ${data.sala_id}`, 'info');
-            });
+                eventSource.addEventListener('connected', (e) => {
+                    const data = JSON.parse(e.data);
+                    addLog(`Conectado à sala ${data.sala_id}`, 'info');
+                });
 
-            eventSource.addEventListener('player', (e) => {
-                const data = JSON.parse(e.data);
-                addLog(`PLAYER: tempo=${data.tempo_atual}s, pausado=${data.pausado}`, 'player');
-            });
+                eventSource.addEventListener('player', (e) => {
+                    const data = JSON.parse(e.data);
+                    addLog(`PLAYER: tempo=${data.tempo_atual}s, pausado=${data.pausado}`, 'player');
+                });
 
-            eventSource.addEventListener('chat', (e) => {
-                const data = JSON.parse(e.data);
-                addLog(`CHAT: [${data.username}] ${data.mensagem}`, 'chat');
-            });
+                eventSource.addEventListener('chat', (e) => {
+                    const data = JSON.parse(e.data);
+                    addLog(`CHAT: [${data.username}] ${data.mensagem}`, 'chat');
+                });
 
-            eventSource.addEventListener('participantes', (e) => {
-                const data = JSON.parse(e.data);
-                addLog(`PARTICIPANTES: ${data.length} online`, 'participantes');
-            });
+                eventSource.addEventListener('participantes', (e) => {
+                    const data = JSON.parse(e.data);
+                    addLog(`PARTICIPANTES: ${data.length} online`, 'participantes');
+                });
+                
+                eventSource.addEventListener('error', (e) => {
+                    const data = JSON.parse(e.data);
+                    addLog(`ERRO: ${data.message}`, 'error');
+                });
 
-            eventSource.onerror = (e) => {
-                addLog('Erro na conexão SSE', 'error');
-                desconectar();
-            };
+                eventSource.onerror = (e) => {
+                    addLog('Erro na conexão SSE', 'error');
+                    console.error('SSE Error:', e);
+                };
+            } catch (error) {
+                addLog(`Erro ao criar EventSource: ${error.message}`, 'error');
+                eventSource = null;
+            }
         }
 
         function desconectar() {
