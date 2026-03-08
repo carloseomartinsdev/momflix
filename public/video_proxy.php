@@ -22,15 +22,19 @@ if (isset($_SERVER['HTTP_RANGE'])) {
 
 curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
     $len = strlen($header);
-    $header = explode(':', $header, 2);
+    $trimmed = trim($header);
     
-    if (count($header) >= 2) {
-        $name = strtolower(trim($header[0]));
+    // Repassar status HTTP
+    if (preg_match('/^HTTP\/\d\.\d\s+(\d+)/', $trimmed, $matches)) {
+        http_response_code((int)$matches[1]);
+    }
+    // Repassar headers importantes
+    elseif (strpos($header, ':') !== false) {
+        list($name, $value) = explode(':', $header, 2);
+        $name = strtolower(trim($name));
         if (in_array($name, ['content-type', 'content-length', 'content-range', 'accept-ranges'])) {
-            header($header[0] . ': ' . trim($header[1]));
+            header(trim($header));
         }
-    } elseif (strpos($header, 'HTTP/') === 0) {
-        header($header);
     }
     
     return $len;
