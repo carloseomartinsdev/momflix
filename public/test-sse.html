@@ -124,6 +124,11 @@
                 addLog('Conexão estabelecida!', 'info');
             };
 
+            eventSource.addEventListener('connected', (e) => {
+                const data = JSON.parse(e.data);
+                addLog(`Conectado à sala ${data.sala_id}`, 'info');
+            });
+
             eventSource.addEventListener('player', (e) => {
                 const data = JSON.parse(e.data);
                 addLog(`PLAYER: tempo=${data.tempo_atual}s, pausado=${data.pausado}`, 'player');
