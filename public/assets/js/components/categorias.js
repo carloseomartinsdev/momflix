@@ -51,11 +51,8 @@ const Categorias = {
                 t.rolo.toLowerCase() !== 'não'
             );
             
-            console.log('Sagas com rolo encontradas:', sagasComRolo);
-            
             for (const saga of sagasComRolo) {
                 const filmesSaga = await API.getFilmesSaga(saga.id);
-                console.log(`Filmes da saga ${saga.rolo}:`, filmesSaga);
                 if (filmesSaga.success && filmesSaga.data && filmesSaga.data.length > 0) {
                     this.criarCategoria(saga.rolo, filmesSaga.data, [], false, true);
                 }
