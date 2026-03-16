@@ -67,8 +67,17 @@ const PlayerCore = {
             }
         });
         
+        let videoSrc;
+        if (params.isSerie && params.path) {
+            videoSrc = 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) + '&path=' + encodeURIComponent(params.path);
+        } else if (params.idTitulo) {
+            videoSrc = 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo);
+        } else {
+            videoSrc = '../video.php?path=' + encodeURIComponent(params.path);
+        }
+        
         this.player.src({
-            src: params.idTitulo ? 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) : '../video.php?path=' + encodeURIComponent(params.path),
+            src: videoSrc,
             type: 'video/mp4'
         });
         

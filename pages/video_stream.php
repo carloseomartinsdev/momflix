@@ -13,8 +13,15 @@ $id = $_GET['id'];
 $episodio_id = $_GET['ep'] ?? null;
 $path = null;
 
+$videoPath = $_GET['path'] ?? null;
+
 try {
-    if ($episodio_id) {
+    if ($videoPath) {
+        $stmt = $pdo->prepare("SELECT path FROM episodios WHERE path = ? AND titulo_id = ?");
+        $stmt->execute([$videoPath, $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) $path = $result['path'];
+    } elseif ($episodio_id) {
         $stmt = $pdo->prepare("SELECT path FROM episodios WHERE id = ?");
         $stmt->execute([$episodio_id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);

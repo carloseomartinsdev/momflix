@@ -208,7 +208,7 @@ const Modal = {
                         const params = new URLSearchParams({
                             path: ep.path,
                             title: ep.tag,
-                            idTitulo: ep.id,
+                            idTitulo: titulo.id,
                             isSerie: '1'
                         });
                         console.log('URL do player:', `player.html?${params.toString()}`);

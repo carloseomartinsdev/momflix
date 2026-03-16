@@ -312,7 +312,7 @@ class SalaPlayer {
             } else {
                 // Para domínios externos, usar WSS se o site estiver em HTTPS
                 if (protocol === 'https:') {
-                    wsUrl = `wss://${hostname}:8080`;
+                    wsUrl = `wss://${hostname}:8081`;
                 } else {
                     wsUrl = `ws://${hostname}:8081`;
                 }
