@@ -70,7 +70,7 @@ const PlayerEpisodes = {
                         this.serieData.episodioAtual.episodio = eIdx;
                         sessionStorage.setItem('serieData', JSON.stringify(this.serieData));
                         
-                        const url = `player.html?idTitulo=${encodeURIComponent(this.serieData.idTitulo)}&path=${encodeURIComponent(ep.path)}&title=${encodeURIComponent(ep.tag)}&isSerie=1`;
+                        const url = `player.html?idTitulo=${encodeURIComponent(this.serieData.idTitulo)}&idEpisodio=${encodeURIComponent(ep.id)}&path=${encodeURIComponent(ep.path)}&title=${encodeURIComponent(ep.tag)}&isSerie=1`;
                         
                         if (window.parent !== window) {
                             window.parent.postMessage({type: 'updateUrl', url: url}, '*');
@@ -181,7 +181,7 @@ const PlayerEpisodes = {
                 sessionStorage.setItem('wasFullscreen', 'true');
             }
             
-            const url = `player.html?idTitulo=${encodeURIComponent(this.serieData.idTitulo)}&path=${encodeURIComponent(proximoEp.path)}&title=${encodeURIComponent(proximoEp.tag)}&isSerie=1`;
+            const url = `player.html?idTitulo=${encodeURIComponent(this.serieData.idTitulo)}&idEpisodio=${encodeURIComponent(proximoEp.id)}&path=${encodeURIComponent(proximoEp.path)}&title=${encodeURIComponent(proximoEp.tag)}&isSerie=1`;
             
             if (window.parent !== window) {
                 window.parent.postMessage({type: 'updateUrl', url: url}, '*');

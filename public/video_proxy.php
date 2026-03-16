@@ -9,7 +9,6 @@ if (!isset($_GET['id'])) {
 
 $url = $LOCAL_SERVER . '/stream?id=' . urlencode($_GET['id']);
 if (isset($_GET['ep'])) $url .= '&ep=' . urlencode($_GET['ep']);
-if (isset($_GET['path'])) $url .= '&path=' . urlencode($_GET['path']);
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);

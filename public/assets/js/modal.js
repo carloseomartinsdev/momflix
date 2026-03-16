@@ -209,6 +209,7 @@ const Modal = {
                             path: ep.path,
                             title: ep.tag,
                             idTitulo: titulo.id,
+                            idEpisodio: ep.id,
                             isSerie: '1'
                         });
                         console.log('URL do player:', `player.html?${params.toString()}`);

@@ -7,6 +7,7 @@ const PlayerCore = {
         const params = new URLSearchParams(window.location.search);
         return {
             idTitulo: params.get('idTitulo'),
+            idEpisodio: params.get('idEpisodio'),
             path: params.get('path'),
             title: params.get('title') || 'Vídeo',
             originalTitle: params.get('originalTitle'),
@@ -67,17 +68,12 @@ const PlayerCore = {
             }
         });
         
-        let videoSrc;
-        if (params.isSerie && params.path) {
-            videoSrc = 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) + '&path=' + encodeURIComponent(params.path);
-        } else if (params.idTitulo) {
-            videoSrc = 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo);
-        } else {
-            videoSrc = '../video.php?path=' + encodeURIComponent(params.path);
-        }
-        
         this.player.src({
-            src: videoSrc,
+            src: params.idEpisodio 
+                ? 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) + '&ep=' + encodeURIComponent(params.idEpisodio)
+                : params.idTitulo 
+                    ? 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) 
+                    : '../video.php?path=' + encodeURIComponent(params.path),
             type: 'video/mp4'
         });
         
