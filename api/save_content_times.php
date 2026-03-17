@@ -12,22 +12,22 @@ if (!isset($_SESSION['user_id']) || !$_SESSION['is_admin']) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($data['arquivo'])) {
-    echo json_encode(['success' => false, 'error' => 'Dados incompletos']);
+if (!isset($data['id'])) {
+    echo json_encode(['success' => false, 'error' => 'ID não fornecido']);
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare("UPDATE episodios SET intro_start = :intro_start, intro_end = :intro_end, content_end = :content_end WHERE path LIKE :path");
+    $stmt = $pdo->prepare("UPDATE episodios SET intro_start = :intro_start, intro_end = :intro_end, content_end = :content_end WHERE id = :id");
     $stmt->execute([
         'intro_start' => $data['intro_start'] ?? 0,
         'intro_end' => $data['intro_end'] ?? 0,
         'content_end' => $data['content_end'] ?? 0,
-        'path' => '%' . $data['arquivo']
+        'id' => $data['id']
     ]);
-    
+
     echo json_encode(['success' => true]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

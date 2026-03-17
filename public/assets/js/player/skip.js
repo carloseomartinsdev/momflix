@@ -31,9 +31,9 @@ const PlayerSkip = {
     
     loadContentTimes() {
         const params = PlayerCore.getUrlParams();
-        const arquivo = params.path.split(/[\\\/]/).pop();
+        if (!params.idTitulo) return;
         
-        fetch(`api/get_content_times.php?arquivo=${encodeURIComponent(arquivo)}`)
+        fetch(`api/get_content_times.php?id=${encodeURIComponent(params.idTitulo)}`)
             .then(r => r.json())
             .then(result => {
                 if (result.success && result.data) {
@@ -146,7 +146,6 @@ const PlayerSkip = {
     
     saveConfig() {
         const params = PlayerCore.getUrlParams();
-        const arquivo = params.path.split(/[\\\/]/).pop();
         
         const introStart = parseFloat(document.getElementById('introStartInput').value) || 0;
         const introEnd = parseFloat(document.getElementById('introEndInput').value) || 0;
@@ -156,7 +155,7 @@ const PlayerSkip = {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                arquivo: arquivo,
+                id: params.idTitulo,
                 intro_start: introStart,
                 intro_end: introEnd,
                 content_end: contentEnd

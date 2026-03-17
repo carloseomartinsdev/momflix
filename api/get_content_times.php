@@ -10,24 +10,20 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$arquivo = $_GET['arquivo'] ?? '';
+$id = $_GET['id'] ?? '';
 
-if (!$arquivo) {
-    echo json_encode(['success' => false, 'error' => 'Arquivo não especificado']);
+if (!$id) {
+    echo json_encode(['success' => false, 'error' => 'ID não especificado']);
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT intro_start, intro_end, content_end FROM episodios WHERE path LIKE :path");
-    $stmt->execute(['path' => '%' . $arquivo]);
+    $stmt = $pdo->prepare("SELECT intro_start, intro_end, content_end FROM episodios WHERE id = ?");
+    $stmt->execute([$id]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($result) {
-        echo json_encode(['success' => true, 'data' => $result]);
-    } else {
-        echo json_encode(['success' => true, 'data' => null]);
-    }
-    
+
+    echo json_encode(['success' => true, 'data' => $result ?: null]);
+
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

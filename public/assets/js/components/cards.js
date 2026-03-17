@@ -4,7 +4,7 @@ const Cards = {
         const card = document.createElement('div');
         card.className = 'card';
         
-        if (isSagaFilmes && titulo.path) {
+        if (isSagaFilmes && titulo.id) {
             card.onclick = () => {
                 Player.assistirFilme(titulo.id || '', titulo.nome);
             };

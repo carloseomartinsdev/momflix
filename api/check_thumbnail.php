@@ -10,22 +10,22 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$arquivo = $_GET['arquivo'] ?? '';
+$id = $_GET['id'] ?? '';
 
-if (!$arquivo) {
+if (!$id) {
     echo json_encode(['exists' => false]);
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT thumbnail FROM episodios WHERE path LIKE :path");
-    $stmt->execute(['path' => "%$arquivo%"]);
+    $stmt = $pdo->prepare("SELECT thumbnail FROM episodios WHERE id = ?");
+    $stmt->execute([$id]);
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+
     $exists = $result && $result['thumbnail'] && file_exists('../thumbnails/' . $result['thumbnail']);
-    
+
     echo json_encode(['exists' => $exists]);
-    
+
 } catch (Exception $e) {
     echo json_encode(['exists' => false]);
 }
