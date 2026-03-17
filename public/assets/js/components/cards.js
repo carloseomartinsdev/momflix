@@ -16,7 +16,7 @@ const Cards = {
                     const iframe = document.getElementById('iframePlayerFrame');
                     const params = new URLSearchParams({
                         title: titulo.nome,
-                        idTitulo: titulo.id,
+                        idTitulo: titulo.rolo,
                         isSerie: isSerie ? '1' : '0',
                         continue: '1'
                     });
