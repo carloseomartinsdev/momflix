@@ -17,10 +17,18 @@ try {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($result) $path = $result['path'];
     } else {
+        // Tentar como título primeiro, depois como episódio
         $stmt = $pdo->prepare("SELECT path, pasta_titulo FROM titulos WHERE id = ?");
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($result) $path = $result['path'] ?: $result['pasta_titulo'];
+        if ($result) {
+            $path = $result['path'] ?: $result['pasta_titulo'];
+        } else {
+            $stmt = $pdo->prepare("SELECT path FROM episodios WHERE id = ?");
+            $stmt->execute([$id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) $path = $result['path'];
+        }
     }
 } catch (Exception $e) {
     http_response_code(500);
