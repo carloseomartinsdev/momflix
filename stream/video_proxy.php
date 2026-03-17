@@ -1,14 +1,12 @@
 <?php
-// COPIE ESTE ARQUIVO PARA O SERVIDOR ONLINE
-$LOCAL_SERVER = 'http://SEU_IP:PORTA/public'; // Ex: http://123.456.789.0:8080/public
+$LOCAL_SERVER = 'http://SEU_IP:PORTA';
 
 if (!isset($_GET['id'])) {
     http_response_code(400);
     exit('ID não fornecido');
 }
 
-$url = $LOCAL_SERVER . '/stream.php?id=' . urlencode($_GET['id']);
-if (isset($_GET['ep'])) $url .= '&ep=' . urlencode($_GET['ep']);
+$url = $LOCAL_SERVER . '/stream?id=' . urlencode($_GET['id']);
 
 $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
@@ -23,16 +21,17 @@ if (isset($_SERVER['HTTP_RANGE'])) {
 curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) {
     $len = strlen($header);
     $header = explode(':', $header, 2);
-    
+
     if (count($header) >= 2) {
         $name = strtolower(trim($header[0]));
+        $value = trim($header[1]);
         if (in_array($name, ['content-type', 'content-length', 'content-range', 'accept-ranges'])) {
-            header($header[0] . ': ' . trim($header[1]));
+            header($header[0] . ': ' . $value);
         }
-    } elseif (strpos($header, 'HTTP/') === 0) {
-        header($header);
+    } elseif (strpos($header[0], 'HTTP/') === 0) {
+        header($header[0]);
     }
-    
+
     return $len;
 });
 
@@ -42,4 +41,3 @@ if (curl_errno($ch)) {
     echo 'Erro ao conectar ao servidor local';
 }
 curl_close($ch);
-?>

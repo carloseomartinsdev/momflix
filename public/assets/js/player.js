@@ -1,39 +1,24 @@
 // Módulo de Player
 const Player = {
-    assistirFilme(id, path, titulo) {
+    assistirFilme(id, titulo) {
         const modal = document.getElementById('iframePlayerModal');
         const iframe = document.getElementById('iframePlayerFrame');
         const params = new URLSearchParams({
-            path: path,
             title: titulo,
-            idTitulo: id || '',
+            idTitulo: id,
             isSerie: '0'
         });
         iframe.src = `player.html?${params.toString()}`;
         modal.style.display = 'flex';
     },
     
-    assistirEpisodio(id, path, titulo) {
+    assistirEpisodio(id, titulo) {
         const modal = document.getElementById('iframePlayerModal');
         const iframe = document.getElementById('iframePlayerFrame');
         const params = new URLSearchParams({
-            path: path,
             title: titulo,
-            idTitulo: id || '',
+            idTitulo: id,
             isSerie: '1'
-        });
-        iframe.src = `player.html?${params.toString()}`;
-        modal.style.display = 'flex';
-    },
-    
-    abrir(path, titulo, isSerie) {
-        const modal = document.getElementById('iframePlayerModal');
-        const iframe = document.getElementById('iframePlayerFrame');
-        const params = new URLSearchParams({
-            path: path,
-            title: titulo,
-            idTitulo: id || '',
-            isSerie: isSerie ? '1' : '0'
         });
         iframe.src = `player.html?${params.toString()}`;
         modal.style.display = 'flex';
@@ -73,7 +58,6 @@ window.addEventListener('message', (event) => {
     } else if (event.data.type === 'updateUrl') {
         document.getElementById('iframePlayerFrame').src = event.data.url;
     } else if (event.data.type === 'reloadContent') {
-        // Enviar mensagem para o iframe recarregar o sprite
         const iframe = document.getElementById('iframePlayerFrame');
         if (iframe && iframe.contentWindow) {
             iframe.contentWindow.postMessage({type: 'reloadContent'}, '*');

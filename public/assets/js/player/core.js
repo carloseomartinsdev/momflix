@@ -7,7 +7,6 @@ const PlayerCore = {
         const params = new URLSearchParams(window.location.search);
         return {
             idTitulo: params.get('idTitulo'),
-            path: params.get('path'),
             title: params.get('title') || 'Vídeo',
             originalTitle: params.get('originalTitle'),
             isSerie: params.get('isSerie') === '1',
@@ -19,18 +18,17 @@ const PlayerCore = {
     init() {
         const params = this.getUrlParams();
         
-        if (!params.path) {
-            alert('Caminho do vídeo não especificado');
+        if (!params.idTitulo) {
+            alert('ID do título não especificado');
             this.fechar();
             return;
         }
         
         document.getElementById('playerTitle').textContent = params.title;
         
-        // Se for série e tiver path, buscar nome do episódio
-        if (params.isSerie && params.path) {
-            const arquivo = params.path.split(/[\\\/]/).pop();
-            fetch(`api/get_episode_info.php?arquivo=${encodeURIComponent(arquivo)}&idTitulo=${params.idTitulo}`)
+        // Se for série, buscar nome do episódio
+        if (params.isSerie) {
+            fetch(`api/get_episode_info.php?idTitulo=${encodeURIComponent(params.idTitulo)}`)
                 .then(r => r.json())
                 .then(result => {
                     if (result.success && result.episodio) {
@@ -68,7 +66,7 @@ const PlayerCore = {
         });
         
         this.player.src({
-            src: params.idTitulo ? 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo) : '../video.php?path=' + encodeURIComponent(params.path),
+            src: 'video_proxy.php?id=' + encodeURIComponent(params.idTitulo),
             type: 'video/mp4'
         });
         
@@ -131,7 +129,6 @@ const PlayerCore = {
         this.saveInterval = setInterval(() => this.savePlayback(), 5000);
         window.addEventListener('beforeunload', () => this.savePlayback());
         
-        // Listener para recarregar quando URL muda
         window.addEventListener('message', (event) => {
             if (event.data.type === 'reloadContent') {
                 this.reloadContent();
@@ -140,7 +137,6 @@ const PlayerCore = {
     },
     
     reloadContent() {
-        // Recarrega o sprite quando o conteúdo muda
         if (PlayerControls && PlayerControls.reloadSprite) {
             PlayerControls.reloadSprite();
         }
@@ -155,8 +151,7 @@ const PlayerCore = {
             idTitulo: params.idTitulo,
             title: params.title,
             currentTime: this.player.currentTime(),
-            duration: this.player.duration(),
-            videoPath: params.path
+            duration: this.player.duration()
         };
         
         fetch('api/save_playback.php', {

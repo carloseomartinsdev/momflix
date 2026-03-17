@@ -70,7 +70,7 @@ const PlayerEpisodes = {
                         this.serieData.episodioAtual.episodio = eIdx;
                         sessionStorage.setItem('serieData', JSON.stringify(this.serieData));
                         
-                        const url = `player.html?idTitulo=${encodeURIComponent(ep.id)}&path=${encodeURIComponent(ep.path)}&title=${encodeURIComponent(ep.tag)}&isSerie=1`;
+                        const url = `player.html?idTitulo=${encodeURIComponent(ep.id)}&title=${encodeURIComponent(ep.tag)}&isSerie=1`;
                         
                         if (window.parent !== window) {
                             window.parent.postMessage({type: 'updateUrl', url: url}, '*');
@@ -117,7 +117,7 @@ const PlayerEpisodes = {
                     this.sagaData.filmeAtual = fIdx;
                     sessionStorage.setItem('sagaData', JSON.stringify(this.sagaData));
                     
-                    const url = `player.html?idTitulo=${encodeURIComponent(filme.idTitulo || '')}&path=${encodeURIComponent(filme.videos[0])}&title=${encodeURIComponent(tituloFilme)}&originalTitle=${encodeURIComponent(tituloFilme)}&isSaga=1`;
+                    const url = `player.html?idTitulo=${encodeURIComponent(filme.idTitulo || filme.id)}&title=${encodeURIComponent(tituloFilme)}&isSaga=1`;
                     
                     if (window.parent !== window) {
                         window.parent.postMessage({type: 'updateUrl', url: url}, '*');
@@ -181,7 +181,7 @@ const PlayerEpisodes = {
                 sessionStorage.setItem('wasFullscreen', 'true');
             }
             
-            const url = `player.html?idTitulo=${encodeURIComponent(proximoEp.id)}&path=${encodeURIComponent(proximoEp.path)}&title=${encodeURIComponent(proximoEp.tag)}&isSerie=1`;
+            const url = `player.html?idTitulo=${encodeURIComponent(proximoEp.id)}&title=${encodeURIComponent(proximoEp.tag)}&isSerie=1`;
             
             if (window.parent !== window) {
                 window.parent.postMessage({type: 'updateUrl', url: url}, '*');
@@ -214,7 +214,7 @@ const PlayerEpisodes = {
             }
             
             const tituloFilme = proximoFilme.info?.titulo || proximoFilme.nome;
-            const url = `player.html?idTitulo=${encodeURIComponent(proximoFilme.idTitulo || '')}&path=${encodeURIComponent(proximoFilme.videos[0])}&title=${encodeURIComponent(tituloFilme)}&originalTitle=${encodeURIComponent(tituloFilme)}&isSaga=1`;
+            const url = `player.html?idTitulo=${encodeURIComponent(proximoFilme.idTitulo || proximoFilme.id)}&title=${encodeURIComponent(tituloFilme)}&isSaga=1`;
             
             if (window.parent !== window) {
                 window.parent.postMessage({type: 'updateUrl', url: url}, '*');

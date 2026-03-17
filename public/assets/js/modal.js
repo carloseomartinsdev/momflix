@@ -50,7 +50,7 @@ const Modal = {
             const btnPlay = document.createElement('button');
             btnPlay.className = 'btn-play';
             btnPlay.innerHTML = '▶ Assistir';
-            btnPlay.onclick = () => Player.assistirFilme(titulo.id, titulo.path, titulo.nome);
+            btnPlay.onclick = () => Player.assistirFilme(titulo.id, titulo.nome);
             actionsContainer.appendChild(btnPlay);
             
             const btnSala = document.createElement('button');
@@ -188,9 +188,6 @@ const Modal = {
                     
                     epItem.appendChild(epInfo);
                     epItem.onclick = () => {
-                        console.log('Episódio clicado - ID:', ep.id, 'Path:', ep.path);
-                        
-                        // Salvar dados da série no sessionStorage
                         const serieData = {
                             titulo: titulo.nome,
                             idTitulo: titulo.id,
@@ -201,19 +198,7 @@ const Modal = {
                             }
                         };
                         sessionStorage.setItem('serieData', JSON.stringify(serieData));
-                        
-                        // Abrir player com parâmetros corretos
-                        const modal = document.getElementById('iframePlayerModal');
-                        const iframe = document.getElementById('iframePlayerFrame');
-                        const params = new URLSearchParams({
-                            path: ep.path,
-                            title: ep.tag,
-                            idTitulo: ep.id,
-                            isSerie: '1'
-                        });
-                        console.log('URL do player:', `player.html?${params.toString()}`);
-                        iframe.src = `player.html?${params.toString()}`;
-                        modal.style.display = 'flex';
+                        Player.assistirEpisodio(ep.id, ep.titulo_episodio || ep.tag);
                     };
                     
                     episodiosContainer.appendChild(epItem);
@@ -271,7 +256,7 @@ const Modal = {
                 btnPlay.innerHTML = '▶';
                 btnPlay.onclick = (e) => {
                     e.stopPropagation();
-                    Player.assistirFilme(filme.id, filme.path, filme.nome);
+                    Player.assistirFilme(filme.id, filme.nome);
                 };
                 filmeItem.appendChild(btnPlay);
                 

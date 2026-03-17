@@ -6,25 +6,15 @@ const Cards = {
         
         if (isSagaFilmes && titulo.path) {
             card.onclick = () => {
-                const modal = document.getElementById('iframePlayerModal');
-                const iframe = document.getElementById('iframePlayerFrame');
-                const params = new URLSearchParams({
-                    path: titulo.path,
-                    title: titulo.nome,
-                    idTitulo: titulo.id || '',
-                    isSerie: '0'
-                });
-                iframe.src = `player.html?${params.toString()}`;
-                modal.style.display = 'flex';
+                Player.assistirFilme(titulo.id || '', titulo.nome);
             };
         } else if (isContinueWatching) {
             if (titulo.rolo) {
                 card.onclick = () => {
+                    const isSerie = titulo.tipo !== 'filme';
                     const modal = document.getElementById('iframePlayerModal');
                     const iframe = document.getElementById('iframePlayerFrame');
-                    const isSerie = titulo.tipo !== 'filme';
                     const params = new URLSearchParams({
-                        path: titulo.rolo,
                         title: titulo.nome,
                         idTitulo: titulo.id,
                         isSerie: isSerie ? '1' : '0',

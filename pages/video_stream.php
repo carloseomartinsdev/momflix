@@ -1,7 +1,4 @@
 <?php
-// ARQUIVO PARA O SERVIDOR LOCAL
-// Este arquivo busca o vídeo no banco e envia o stream
-
 require_once 'config/database.php';
 
 if (!isset($_GET['id'])) {
@@ -10,27 +7,29 @@ if (!isset($_GET['id'])) {
 }
 
 $id = $_GET['id'];
-$episodio_id = $_GET['ep'] ?? null;
 $path = null;
 
 try {
-    if ($episodio_id) {
+    // 1. Buscar em titulos (filmes)
+    $stmt = $pdo->prepare("SELECT path FROM titulos WHERE id = ? AND path IS NOT NULL");
+    $stmt->execute([$id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($result && $result['path']) $path = $result['path'];
+
+    // 2. Buscar em episodios
+    if (!$path) {
         $stmt = $pdo->prepare("SELECT path FROM episodios WHERE id = ?");
-        $stmt->execute([$episodio_id]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($result) $path = $result['path'];
-    } else {
-        $stmt = $pdo->prepare("SELECT path, pasta_titulo FROM titulos WHERE id = ?");
         $stmt->execute([$id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($result) {
-            $path = $result['path'] ?: $result['pasta_titulo'];
-        } else {
-            $stmt = $pdo->prepare("SELECT path FROM episodios WHERE id = ?");
-            $stmt->execute([$id]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($result) $path = $result['path'];
-        }
+        if ($result) $path = $result['path'];
+    }
+
+    // 3. Buscar em filmes_saga
+    if (!$path) {
+        $stmt = $pdo->prepare("SELECT path FROM filmes_saga WHERE id = ?");
+        $stmt->execute([$id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) $path = $result['path'];
     }
 } catch (Exception $e) {
     http_response_code(500);
@@ -39,7 +38,7 @@ try {
 
 if (!$path || !file_exists($path)) {
     http_response_code(404);
-    exit('Vídeo não encontrado');
+    exit('Vídeo não encontrado - ID: ' . $id);
 }
 
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
@@ -69,7 +68,7 @@ if (isset($_SERVER['HTTP_RANGE'])) {
         $start = intval($matches[1]);
         if (!empty($matches[2])) $end = intval($matches[2]);
     }
-    
+
     header('HTTP/1.1 206 Partial Content');
     header('Content-Range: bytes ' . $start . '-' . $end . '/' . $size);
     header('Content-Length: ' . ($end - $start + 1));
@@ -91,4 +90,3 @@ while (!feof($file) && $pos <= $end && connection_status() == 0) {
     $pos += $buffer;
 }
 fclose($file);
-?>
