@@ -5,6 +5,11 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Servir capas direto como arquivo estático (bypass PHP)
+RewriteCond %{QUERY_STRING} ^id=([a-f0-9]+)$
+RewriteCond %{DOCUMENT_ROOT}/capas/%1.jpg -f
+RewriteRule ^image\.php$ capas/%1.jpg [L]
+
 # Headers CORS
 Header always set Access-Control-Allow-Origin "*"
 Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
